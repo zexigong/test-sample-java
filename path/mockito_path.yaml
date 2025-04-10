@@ -1,0 +1,40 @@
+entries:
+  - test_file: mockito\ArgumentCaptorTest.java\ArgumentCaptorTest.java
+    test_display: mockito-core/src/test/java/org/mockito/ArgumentCaptorTest.java
+    source_display: mockito-core/src/main/java/org/mockito/ArgumentCaptor.java
+
+  - test_file: mockito\AndTest.java\AndTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/AndTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/And.java
+
+  - test_file: mockito\CapturingMatcherTest.java\CapturingMatcherTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/CapturingMatcherTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/CapturingMatcher.java
+
+  - test_file: mockito\EqualityTest.java\EqualityTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/EqualityTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/Equality.java
+
+  - test_file: mockito\EqualsTest.java\EqualsTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/EqualsTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/Equals.java
+
+  - test_file: mockito\InstanceOfTest.java\InstanceOfTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/InstanceOfTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/InstanceOf.java
+
+  - test_file: mockito\OrTest.java\OrTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/OrTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/Or.java
+
+  - test_file: mockito\SameTest.java\SameTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/matchers/SameTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/matchers/Same.java
+
+  - test_file: mockito\PluralizerTest.java\PluralizerTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/reporting/PluralizerTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/reporting/Pluralizer.java
+
+  - test_file: mockito\ThreadSafeMockingProgressTest.java\ThreadSafeMockingProgressTest.java
+    test_display: mockito-core/src/test/java/org/mockito/internal/progress/ThreadSafeMockingProgressTest.java
+    source_display: mockito-core/src/main/java/org/mockito/internal/progress/ThreadSafeMockingProgress.java

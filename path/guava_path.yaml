@@ -1,0 +1,40 @@
+entries:
+  - test_file: guava\AppendableWriterTest.java\AppendableWriterTest.java
+    test_display: guava-tests/test/com/google/common/io/AppendableWriterTest.java
+    source_display: guava/src/com/google/common/io/AppendableWriter.java
+
+  - test_file: guava\ByteSinkTest.java\ByteSinkTest.java
+    test_display: guava-tests/test/com/google/common/io/ByteSinkTest.java
+    source_display: guava/src/com/google/common/io/ByteSink.java
+
+  - test_file: guava\CharSequenceReaderTest.java\CharSequenceReaderTest.java
+    test_display: guava-tests/test/com/google/common/io/CharSequenceReaderTest.java
+    source_display: guava/src/com/google/common/io/CharSequenceReader.java
+
+  - test_file: guava\CharStreamsTest.java\CharStreamsTest.java
+    test_display: guava-tests/test/com/google/common/io/CharStreamsTest.java
+    source_display: guava/src/com/google/common/io/CharStreams.java
+
+  - test_file: guava\CloseablesTest.java\CloseablesTest.java
+    test_display: guava-tests/test/com/google/common/io/CloseablesTest.java
+    source_display: guava/src/com/google/common/io/Closeables.java
+
+  - test_file: guava\CountingInputStreamTest.java\CountingInputStreamTest.java
+    test_display: guava-tests/test/com/google/common/io/CountingInputStreamTest.java
+    source_display: guava/src/com/google/common/io/CountingInputStream.java
+
+  - test_file: guava\CountingOutputStreamTest.java\CountingOutputStreamTest.java
+    test_display: guava-tests/test/com/google/common/io/CountingOutputStreamTest.java
+    source_display: guava/src/com/google/common/io/CountingOutputStream.java
+
+  - test_file: guava\FlushablesTest.java\FlushablesTest.java
+    test_display: guava-tests/test/com/google/common/io/FlushablesTest.java
+    source_display: guava/src/com/google/common/io/Flushables.java
+
+  - test_file: guava\LittleEndianDataOutputStreamTest.java\LittleEndianDataOutputStreamTest.java
+    test_display: guava-tests/test/com/google/common/io/LittleEndianDataOutputStreamTest.java
+    source_display: guava/src/com/google/common/io/LittleEndianDataOutputStream.java
+
+  - test_file: guava\MultiReaderTest.java\MultiReaderTest.java
+    test_display: guava-tests/test/com/google/common/io/MultiReaderTest.java
+    source_display: guava/src/com/google/common/io/MultiReader.java

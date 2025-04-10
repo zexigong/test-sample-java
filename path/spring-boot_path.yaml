@@ -1,0 +1,40 @@
+entries:
+  - test_file: spring-boot\BannerTests.java\BannerTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/BannerTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/Banner.java
+
+  - test_file: spring-boot\DefaultApplicationArgumentsTests.java\DefaultApplicationArgumentsTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/DefaultApplicationArgumentsTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/DefaultApplicationArguments.java
+
+  - test_file: spring-boot\DefaultBootstrapContextTests.java\DefaultBootstrapContextTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/DefaultBootstrapContextTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/DefaultBootstrapContext.java
+
+  - test_file: spring-boot\DefaultPropertiesPropertySourceTests.java\DefaultPropertiesPropertySourceTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/DefaultPropertiesPropertySourceTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/DefaultPropertiesPropertySource.java
+
+  - test_file: spring-boot\EnvironmentConverterTests.java\EnvironmentConverterTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/EnvironmentConverterTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/EnvironmentConverter.java
+
+  - test_file: spring-boot\LazyInitializationExcludeFilterTests.java\LazyInitializationExcludeFilterTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/LazyInitializationExcludeFilterTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/LazyInitializationExcludeFilter.java
+
+  - test_file: spring-boot\ResourceBannerTests.java\ResourceBannerTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/ResourceBannerTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/ResourceBanner.java
+
+  - test_file: spring-boot\ExitCodeGeneratorsTests.java\ExitCodeGeneratorsTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/ExitCodeGeneratorsTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/ExitCodeGenerators.java
+
+  - test_file: spring-boot\SpringBootExceptionHandlerTests.java\SpringBootExceptionHandlerTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/SpringBootExceptionHandlerTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/SpringBootExceptionHandler.java
+
+  - test_file: spring-boot\LazyInitializationBeanFactoryPostProcessorTests.java\LazyInitializationBeanFactoryPostProcessorTests.java
+    test_display: spring-boot-project/spring-boot/src/test/java/org/springframework/boot/LazyInitializationBeanFactoryPostProcessorTests.java
+    source_display: spring-boot-project/spring-boot/src/main/java/org/springframework/boot/LazyInitializationBeanFactoryPostProcessor.java

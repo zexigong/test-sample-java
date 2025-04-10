@@ -1,0 +1,40 @@
+entries:
+  - test_file: apache_ant\AssertionsTest.java\AssertionsTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/AssertionsTest.java
+    source_display: src/main/org/apache/tools/ant/types/Assertions.java
+
+  - test_file: apache_ant\CharSetTest.java\CharSetTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/CharSetTest.java
+    source_display: src/main/org/apache/tools/ant/types/CharSet.java
+
+  - test_file: apache_ant\DirSetTest.java\DirSetTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/DirSetTest.java
+    source_display: src/main/org/apache/tools/ant/types/DirSet.java
+
+  - test_file: apache_ant\EnumeratedAttributeTest.java\EnumeratedAttributeTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/EnumeratedAttributeTest.java
+    source_display: src/main/org/apache/tools/ant/types/EnumeratedAttribute.java
+
+  - test_file: apache_ant\FlexIntegerTest.java\FlexIntegerTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/FlexIntegerTest.java
+    source_display: src/main/org/apache/tools/ant/types/FlexInteger.java
+
+  - test_file: apache_ant\ModuleVersionTest.java\ModuleVersionTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/types/ModuleVersionTest.java
+    source_display: src/main/org/apache/tools/ant/types/ModuleVersion.java
+
+  - test_file: apache_ant\DefaultLoggerTest.java\DefaultLoggerTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/DefaultLoggerTest.java
+    source_display: src/main/org/apache/tools/ant/DefaultLogger.java
+
+  - test_file: apache_ant\ExecutorTest.java\ExecutorTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/ExecutorTest.java
+    source_display: src/main/org/apache/tools/ant/Executor.java
+
+  - test_file: apache_ant\LocationTest.java\LocationTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/LocationTest.java
+    source_display: src/main/org/apache/tools/ant/Location.java
+
+  - test_file: apache_ant\ProjectComponentTest.java\ProjectComponentTest.java
+    test_display: src/tests/junit/org/apache/tools/ant/ProjectComponentTest.java
+    source_display: src/main/org/apache/tools/ant/ProjectComponent.java
