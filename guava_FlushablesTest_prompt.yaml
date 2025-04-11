@@ -1,0 +1,108 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/Flushables.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/FlushablesTest.java\nProject\
+    \ Programming Language: Java\nTesting Framework: JUnit\n### Source File Content\n\
+    ### Source File Content:\n/*\n * Copyright (C) 2007 The Guava Authors\n *\n *\
+    \ Licensed under the Apache License, Version 2.0 (the \"License\"); you may not\
+    \ use this file except\n * in compliance with the License. You may obtain a copy\
+    \ of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n *\
+    \ Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport com.google.common.annotations.Beta;\n\
+    import com.google.common.annotations.GwtIncompatible;\nimport com.google.common.annotations.J2ktIncompatible;\n\
+    import java.io.Flushable;\nimport java.io.IOException;\nimport java.util.logging.Level;\n\
+    import java.util.logging.Logger;\n\n/**\n * Utility methods for working with {@link\
+    \ Flushable} objects.\n *\n * @author Michael Lancaster\n * @since 1.0\n */\n\
+    @J2ktIncompatible\n@GwtIncompatible\npublic final class Flushables {\n  private\
+    \ static final Logger logger = Logger.getLogger(Flushables.class.getName());\n\
+    \n  private Flushables() {}\n\n  /**\n   * Flush a {@link Flushable}, with control\
+    \ over whether an {@code IOException} may be thrown.\n   *\n   * <p>If {@code\
+    \ swallowIOException} is true, then we don't rethrow {@code IOException}, but\
+    \ merely\n   * log it.\n   *\n   * @param flushable the {@code Flushable} object\
+    \ to be flushed.\n   * @param swallowIOException if true, don't propagate IO exceptions\
+    \ thrown by the {@code flush}\n   *     method\n   * @throws IOException if {@code\
+    \ swallowIOException} is false and {@link Flushable#flush} throws\n   *     an\
+    \ {@code IOException}.\n   * @see Closeables#close\n   */\n  @SuppressWarnings(\"\
+    IdentifierName\") // See Closeables.close\n  public static void flush(Flushable\
+    \ flushable, boolean swallowIOException) throws IOException {\n    try {\n   \
+    \   flushable.flush();\n    } catch (IOException e) {\n      if (swallowIOException)\
+    \ {\n        logger.log(Level.WARNING, \"IOException thrown while flushing Flushable.\"\
+    , e);\n      } else {\n        throw e;\n      }\n    }\n  }\n\n  /**\n   * Equivalent\
+    \ to calling {@code flush(flushable, true)}, but with no {@code IOException} in\
+    \ the\n   * signature.\n   *\n   * @param flushable the {@code Flushable} object\
+    \ to be flushed.\n   */\n  @Beta\n  public static void flushQuietly(Flushable\
+    \ flushable) {\n    try {\n      flush(flushable, true);\n    } catch (IOException\
+    \ e) {\n      logger.log(Level.SEVERE, \"IOException should not have been thrown.\"\
+    , e);\n    }\n  }\n}\n\n### Source File Dependency Files Content\n### Dependency\
+    \ File: Beta.java\n/*\n * Copyright (C) 2010 The Guava Authors\n *\n * Licensed\
+    \ under the Apache License, Version 2.0 (the \"License\"); you may not use this\
+    \ file except\n * in compliance with the License. You may obtain a copy of the\
+    \ License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless\
+    \ required by applicable law or agreed to in writing, software distributed under\
+    \ the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR\
+    \ CONDITIONS OF ANY KIND, either express\n * or implied. See the License for the\
+    \ specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * Signifies that a public API (public class, method or field) is subject\
+    \ to incompatible changes,\n * or even removal, in a future release. An API bearing\
+    \ this annotation is exempt from any\n * compatibility guarantees made by its\
+    \ containing library. Note that the presence of this\n * annotation implies nothing\
+    \ about the quality or performance of the API in question, only the fact\n * that\
+    \ it is not \"API-frozen.\"\n *\n * <p>It is generally safe for <i>applications</i>\
+    \ to depend on beta APIs, at the cost of some extra\n * work during upgrades.\
+    \ However it is generally inadvisable for <i>libraries</i> (which get\n * included\
+    \ on users' CLASSPATHs, outside the library developers' control) to do so.\n *\n\
+    \ * @author Kevin Bourrillion\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({\n\
+    \  ElementType.ANNOTATION_TYPE,\n  ElementType.CONSTRUCTOR,\n  ElementType.FIELD,\n\
+    \  ElementType.METHOD,\n  ElementType.TYPE\n})\n@Documented\n@GwtCompatible\n\
+    public @interface Beta {}\n\n\n### Dependency File: GwtIncompatible.java\n/*\n\
+    \ * Copyright (C) 2009 The Guava Authors\n *\n * Licensed under the Apache License,\
+    \ Version 2.0 (the \"License\"); you may not use this file except\n * in compliance\
+    \ with the License. You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * The presence of this annotation on an API indicates that the method\
+    \ may <em>not</em> be used with\n * the <a href=\"http://www.gwtproject.org/\"\
+    >Google Web Toolkit</a> (GWT).\n *\n * <p>This annotation behaves identically\
+    \ to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\nOutput the complete test file, code only,\
+    \ no explanations.\n### Time\nCurrent time: 2025-04-11 00:58:26\n"
+  role: user

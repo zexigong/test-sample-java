@@ -1,0 +1,116 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/ByteSink.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/ByteSinkTest.java\nProject\
+    \ Programming Language: Java\nTesting Framework: JUnit\n### Source File Content\n\
+    ### Source File Content:\n/*\n * Copyright (C) 2012 The Guava Authors\n *\n *\
+    \ Licensed under the Apache License, Version 2.0 (the \"License\"); you may not\
+    \ use this file except\n * in compliance with the License. You may obtain a copy\
+    \ of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n *\
+    \ Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport static com.google.common.base.Preconditions.checkNotNull;\n\
+    \nimport com.google.common.annotations.GwtIncompatible;\nimport com.google.common.annotations.J2ktIncompatible;\n\
+    import com.google.errorprone.annotations.CanIgnoreReturnValue;\nimport java.io.BufferedOutputStream;\n\
+    import java.io.IOException;\nimport java.io.InputStream;\nimport java.io.OutputStream;\n\
+    import java.io.OutputStreamWriter;\nimport java.io.Writer;\nimport java.nio.charset.Charset;\n\
+    \n/**\n * A destination to which bytes can be written, such as a file. Unlike\
+    \ an {@link OutputStream}, a\n * {@code ByteSink} is not an open, stateful stream\
+    \ that can be written to and closed. Instead, it\n * is an immutable <i>supplier</i>\
+    \ of {@code OutputStream} instances.\n *\n * <p>{@code ByteSink} provides two\
+    \ kinds of methods:\n *\n * <ul>\n *   <li><b>Methods that return a stream:</b>\
+    \ These methods should return a <i>new</i>, independent\n *       instance each\
+    \ time they are called. The caller is responsible for ensuring that the\n *  \
+    \     returned stream is closed.\n *   <li><b>Convenience methods:</b> These are\
+    \ implementations of common operations that are\n *       typically implemented\
+    \ by opening a stream using one of the methods in the first category,\n *    \
+    \   doing something and finally closing the stream or channel that was opened.\n\
+    \ * </ul>\n *\n * @since 14.0\n * @author Colin Decker\n */\n@J2ktIncompatible\n\
+    @GwtIncompatible\npublic abstract class ByteSink {\n\n  /** Constructor for use\
+    \ by subclasses. */\n  protected ByteSink() {}\n\n  /**\n   * Returns a {@link\
+    \ CharSink} view of this {@code ByteSink} that writes characters to this sink\
+    \ as\n   * bytes encoded with the given {@link Charset charset}.\n   */\n  public\
+    \ CharSink asCharSink(Charset charset) {\n    return new AsCharSink(charset);\n\
+    \  }\n\n  /**\n   * Opens a new {@link OutputStream} for writing to this sink.\
+    \ This method returns a new,\n   * independent stream each time it is called.\n\
+    \   *\n   * <p>The caller is responsible for ensuring that the returned stream\
+    \ is closed.\n   *\n   * @throws IOException if an I/O error occurs while opening\
+    \ the stream\n   */\n  public abstract OutputStream openStream() throws IOException;\n\
+    \n  /**\n   * Opens a new buffered {@link OutputStream} for writing to this sink.\
+    \ The returned stream is not\n   * required to be a {@link BufferedOutputStream}\
+    \ in order to allow implementations to simply\n   * delegate to {@link #openStream()}\
+    \ when the stream returned by that method does not benefit from\n   * additional\
+    \ buffering (for example, a {@code ByteArrayOutputStream}). This method returns\
+    \ a new,\n   * independent stream each time it is called.\n   *\n   * <p>The caller\
+    \ is responsible for ensuring that the returned stream is closed.\n   *\n   *\
+    \ @throws IOException if an I/O error occurs while opening the stream\n   * @since\
+    \ 15.0 (in 14.0 with return type {@link BufferedOutputStream})\n   */\n  public\
+    \ OutputStream openBufferedStream() throws IOException {\n    OutputStream out\
+    \ = openStream();\n    return (out instanceof BufferedOutputStream)\n        ?\
+    \ (BufferedOutputStream) out\n        : new BufferedOutputStream(out);\n  }\n\n\
+    \  /**\n   * Writes all the given bytes to this sink.\n   *\n   * @throws IOException\
+    \ if an I/O occurs while writing to this sink\n   */\n  public void write(byte[]\
+    \ bytes) throws IOException {\n    checkNotNull(bytes);\n\n    try (OutputStream\
+    \ out = openStream()) {\n      out.write(bytes);\n    }\n  }\n\n  /**\n   * Writes\
+    \ all the bytes from the given {@code InputStream} to this sink. Does not close\
+    \ {@code\n   * input}.\n   *\n   * @return the number of bytes written\n   * @throws\
+    \ IOException if an I/O occurs while reading from {@code input} or writing to\
+    \ this sink\n   */\n  @CanIgnoreReturnValue\n  public long writeFrom(InputStream\
+    \ input) throws IOException {\n    checkNotNull(input);\n\n    try (OutputStream\
+    \ out = openStream()) {\n      return ByteStreams.copy(input, out);\n    }\n \
+    \ }\n\n  /**\n   * A char sink that encodes written characters with a charset\
+    \ and writes resulting bytes to this\n   * byte sink.\n   */\n  private final\
+    \ class AsCharSink extends CharSink {\n\n    private final Charset charset;\n\n\
+    \    private AsCharSink(Charset charset) {\n      this.charset = checkNotNull(charset);\n\
+    \    }\n\n    @Override\n    public Writer openStream() throws IOException {\n\
+    \      return new OutputStreamWriter(ByteSink.this.openStream(), charset);\n \
+    \   }\n\n    @Override\n    public String toString() {\n      return ByteSink.this.toString()\
+    \ + \".asCharSink(\" + charset + \")\";\n    }\n  }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: GwtIncompatible.java\n/*\n * Copyright (C)\
+    \ 2009 The Guava Authors\n *\n * Licensed under the Apache License, Version 2.0\
+    \ (the \"License\"); you may not use this file except\n * in compliance with the\
+    \ License. You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * The presence of this annotation on an API indicates that the method\
+    \ may <em>not</em> be used with\n * the <a href=\"http://www.gwtproject.org/\"\
+    >Google Web Toolkit</a> (GWT).\n *\n * <p>This annotation behaves identically\
+    \ to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\nOutput the complete test file, code only,\
+    \ no explanations.\n### Time\nCurrent time: 2025-04-11 00:57:35\n"
+  role: user

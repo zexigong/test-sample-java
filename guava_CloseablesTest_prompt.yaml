@@ -1,0 +1,135 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/Closeables.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/CloseablesTest.java\nProject\
+    \ Programming Language: Java\nTesting Framework: JUnit\n### Source File Content\n\
+    ### Source File Content:\n/*\n * Copyright (C) 2007 The Guava Authors\n *\n *\
+    \ Licensed under the Apache License, Version 2.0 (the \"License\"); you may not\
+    \ use this file except\n * in compliance with the License. You may obtain a copy\
+    \ of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n *\
+    \ Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport com.google.common.annotations.GwtIncompatible;\n\
+    import com.google.common.annotations.J2ktIncompatible;\nimport com.google.common.annotations.VisibleForTesting;\n\
+    import java.io.Closeable;\nimport java.io.IOException;\nimport java.io.InputStream;\n\
+    import java.io.Reader;\nimport java.util.logging.Level;\nimport java.util.logging.Logger;\n\
+    import org.jspecify.annotations.Nullable;\n\n/**\n * Utility methods for working\
+    \ with {@link Closeable} objects.\n *\n * @author Michael Lancaster\n * @since\
+    \ 1.0\n */\n@J2ktIncompatible\n@GwtIncompatible\npublic final class Closeables\
+    \ {\n  @VisibleForTesting static final Logger logger = Logger.getLogger(Closeables.class.getName());\n\
+    \n  private Closeables() {}\n\n  /**\n   * Closes a {@link Closeable}, with control\
+    \ over whether an {@code IOException} may be thrown.\n   * This is primarily useful\
+    \ in a finally block, where a thrown exception needs to be logged but\n   * not\
+    \ propagated (otherwise the original exception will be lost).\n   *\n   * <p>If\
+    \ {@code swallowIOException} is true then we never throw {@code IOException} but\
+    \ merely log\n   * it.\n   *\n   * <p>Example:\n   *\n   * {@snippet :\n   * public\
+    \ void useStreamNicely() throws IOException {\n   *   SomeStream stream = new\
+    \ SomeStream(\"foo\");\n   *   boolean threw = true;\n   *   try {\n   *     //\
+    \ ... code which does something with the stream ...\n   *     threw = false;\n\
+    \   *   } finally {\n   *     // If an exception occurs, rethrow it only if threw==false:\n\
+    \   *     Closeables.close(stream, threw);\n   *   }\n   * }\n   * }\n   *\n \
+    \  * @param closeable the {@code Closeable} object to be closed, or null, in which\
+    \ case this method\n   *     does nothing\n   * @param swallowIOException if true,\
+    \ don't propagate IO exceptions thrown by the {@code close}\n   *     methods\n\
+    \   * @throws IOException if {@code swallowIOException} is false and {@code close}\
+    \ throws an {@code\n   *     IOException}.\n   */\n  /*\n   * The proper capitalization\
+    \ would be \"swallowIoException.\" However:\n   *\n   * - It might be preferable\
+    \ to be consistent with the JDK precedent (which they stuck with even\n   *  \
+    \ for \"UncheckedIOException\").\n   *\n   * - If we change the name, some of\
+    \ our callers break because our Android Lint ParameterName check\n   *   doesn't\
+    \ make the exception for com.google.common that internal Error Prone does: b/386402967.\n\
+    \   */\n  @SuppressWarnings(\"IdentifierName\")\n  public static void close(@Nullable\
+    \ Closeable closeable, boolean swallowIOException)\n      throws IOException {\n\
+    \    if (closeable == null) {\n      return;\n    }\n    try {\n      closeable.close();\n\
+    \    } catch (IOException e) {\n      if (swallowIOException) {\n        logger.log(Level.WARNING,\
+    \ \"IOException thrown while closing Closeable.\", e);\n      } else {\n     \
+    \   throw e;\n      }\n    }\n  }\n\n  /**\n   * Closes the given {@link InputStream},\
+    \ logging any {@code IOException} that's thrown rather than\n   * propagating\
+    \ it.\n   *\n   * <p>While it's not safe in the general case to ignore exceptions\
+    \ that are thrown when closing an\n   * I/O resource, it should generally be safe\
+    \ in the case of a resource that's being used only for\n   * reading, such as\
+    \ an {@code InputStream}. Unlike with writable resources, there's no chance that\n\
+    \   * a failure that occurs when closing the stream indicates a meaningful problem\
+    \ such as a failure\n   * to flush all bytes to the underlying resource.\n   *\n\
+    \   * @param inputStream the input stream to be closed, or {@code null} in which\
+    \ case this method\n   *     does nothing\n   * @since 17.0\n   */\n  public static\
+    \ void closeQuietly(@Nullable InputStream inputStream) {\n    try {\n      close(inputStream,\
+    \ true);\n    } catch (IOException impossible) {\n      throw new AssertionError(impossible);\n\
+    \    }\n  }\n\n  /**\n   * Closes the given {@link Reader}, logging any {@code\
+    \ IOException} that's thrown rather than\n   * propagating it.\n   *\n   * <p>While\
+    \ it's not safe in the general case to ignore exceptions that are thrown when\
+    \ closing an\n   * I/O resource, it should generally be safe in the case of a\
+    \ resource that's being used only for\n   * reading, such as a {@code Reader}.\
+    \ Unlike with writable resources, there's no chance that a\n   * failure that\
+    \ occurs when closing the reader indicates a meaningful problem such as a failure\
+    \ to\n   * flush all bytes to the underlying resource.\n   *\n   * @param reader\
+    \ the reader to be closed, or {@code null} in which case this method does nothing\n\
+    \   * @since 17.0\n   */\n  public static void closeQuietly(@Nullable Reader reader)\
+    \ {\n    try {\n      close(reader, true);\n    } catch (IOException impossible)\
+    \ {\n      throw new AssertionError(impossible);\n    }\n  }\n}\n\n### Source\
+    \ File Dependency Files Content\n### Dependency File: GwtIncompatible.java\n/*\n\
+    \ * Copyright (C) 2009 The Guava Authors\n *\n * Licensed under the Apache License,\
+    \ Version 2.0 (the \"License\"); you may not use this file except\n * in compliance\
+    \ with the License. You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * The presence of this annotation on an API indicates that the method\
+    \ may <em>not</em> be used with\n * the <a href=\"http://www.gwtproject.org/\"\
+    >Google Web Toolkit</a> (GWT).\n *\n * <p>This annotation behaves identically\
+    \ to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\n\n### Dependency File: VisibleForTesting.java\n\
+    /*\n * Copyright (C) 2006 The Guava Authors\n *\n * Licensed under the Apache\
+    \ License, Version 2.0 (the \"License\"); you may not use this file except\n *\
+    \ in compliance with the License. You may obtain a copy of the License at\n *\n\
+    \ * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable\
+    \ law or agreed to in writing, software distributed under the License\n * is distributed\
+    \ on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either\
+    \ express\n * or implied. See the License for the specific language governing\
+    \ permissions and limitations under\n * the License.\n */\n\npackage com.google.common.annotations;\n\
+    \n/**\n * Annotates a program element that exists, or is more widely visible than\
+    \ otherwise necessary, only\n * for use in test code.\n *\n * <p><b>Do not use\
+    \ this interface</b> for public or protected declarations: it is a fig leaf for\n\
+    \ * bad design, and it does not prevent anyone from using the declaration---and\
+    \ experience has shown\n * that they will. If the method breaks the encapsulation\
+    \ of its class, then its internal\n * representation will be hard to change. Instead,\
+    \ use <a\n * href=\"http://errorprone.info/bugpattern/RestrictedApi\">RestrictedApiChecker</a>,\
+    \ which enforces\n * fine-grained visibility policies.\n *\n * @author Johannes\
+    \ Henkel\n */\n@GwtCompatible\npublic @interface VisibleForTesting {\n}\n\nOutput\
+    \ the complete test file, code only, no explanations.\n### Time\nCurrent time:\
+    \ 2025-04-11 00:57:59\n"
+  role: user

@@ -1,0 +1,82 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/CountingInputStream.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/CountingInputStreamTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (C) 2007 The Guava Authors\n\
+    \ *\n * Licensed under the Apache License, Version 2.0 (the \"License\"); you\
+    \ may not use this file except\n * in compliance with the License. You may obtain\
+    \ a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport static com.google.common.base.Preconditions.checkNotNull;\n\
+    \nimport com.google.common.annotations.GwtIncompatible;\nimport com.google.common.annotations.J2ktIncompatible;\n\
+    import java.io.FilterInputStream;\nimport java.io.IOException;\nimport java.io.InputStream;\n\
+    \n/**\n * An {@link InputStream} that counts the number of bytes read.\n *\n *\
+    \ @author Chris Nokleberg\n * @since 1.0\n */\n@J2ktIncompatible\n@GwtIncompatible\n\
+    public final class CountingInputStream extends FilterInputStream {\n\n  private\
+    \ long count;\n  private long mark = -1;\n\n  /**\n   * Wraps another input stream,\
+    \ counting the number of bytes read.\n   *\n   * @param in the input stream to\
+    \ be wrapped\n   */\n  public CountingInputStream(InputStream in) {\n    super(checkNotNull(in));\n\
+    \  }\n\n  /** Returns the number of bytes read. */\n  public long getCount() {\n\
+    \    return count;\n  }\n\n  @Override\n  public int read() throws IOException\
+    \ {\n    int result = in.read();\n    if (result != -1) {\n      count++;\n  \
+    \  }\n    return result;\n  }\n\n  @Override\n  public int read(byte[] b, int\
+    \ off, int len) throws IOException {\n    int result = in.read(b, off, len);\n\
+    \    if (result != -1) {\n      count += result;\n    }\n    return result;\n\
+    \  }\n\n  @Override\n  public long skip(long n) throws IOException {\n    long\
+    \ result = in.skip(n);\n    count += result;\n    return result;\n  }\n\n  @Override\n\
+    \  public synchronized void mark(int readlimit) {\n    in.mark(readlimit);\n \
+    \   mark = count;\n    // it's okay to mark even if mark isn't supported, as reset\
+    \ won't work\n  }\n\n  @Override\n  public synchronized void reset() throws IOException\
+    \ {\n    if (!in.markSupported()) {\n      throw new IOException(\"Mark not supported\"\
+    );\n    }\n    if (mark == -1) {\n      throw new IOException(\"Mark not set\"\
+    );\n    }\n\n    in.reset();\n    count = mark;\n  }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: GwtIncompatible.java\n/*\n * Copyright (C)\
+    \ 2009 The Guava Authors\n *\n * Licensed under the Apache License, Version 2.0\
+    \ (the \"License\"); you may not use this file except\n * in compliance with the\
+    \ License. You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * The presence of this annotation on an API indicates that the method\
+    \ may <em>not</em> be used with\n * the <a href=\"http://www.gwtproject.org/\"\
+    >Google Web Toolkit</a> (GWT).\n *\n * <p>This annotation behaves identically\
+    \ to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\nOutput the complete test file, code only,\
+    \ no explanations.\n### Time\nCurrent time: 2025-04-11 00:58:09\n"
+  role: user

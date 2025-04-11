@@ -1,0 +1,96 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/AppendableWriter.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/AppendableWriterTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (C) 2006 The Guava Authors\n\
+    \ *\n * Licensed under the Apache License, Version 2.0 (the \"License\"); you\
+    \ may not use this file except\n * in compliance with the License. You may obtain\
+    \ a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport static com.google.common.base.Preconditions.checkNotNull;\n\
+    \nimport com.google.common.annotations.GwtIncompatible;\nimport com.google.common.annotations.J2ktIncompatible;\n\
+    import java.io.Closeable;\nimport java.io.Flushable;\nimport java.io.IOException;\n\
+    import java.io.Writer;\nimport org.jspecify.annotations.Nullable;\n\n/**\n * Writer\
+    \ that places all output on an {@link Appendable} target. If the target is {@link\
+    \ Flushable}\n * or {@link Closeable}, flush()es and close()s will also be delegated\
+    \ to the target.\n *\n * @author Alan Green\n * @author Sebastian Kanthak\n *\
+    \ @since 1.0\n */\n@J2ktIncompatible\n@GwtIncompatible\nclass AppendableWriter\
+    \ extends Writer {\n  private final Appendable target;\n  private boolean closed;\n\
+    \n  /**\n   * Creates a new writer that appends everything it writes to {@code\
+    \ target}.\n   *\n   * @param target target to which to append output\n   */\n\
+    \  AppendableWriter(Appendable target) {\n    this.target = checkNotNull(target);\n\
+    \  }\n\n  /*\n   * Abstract methods from Writer\n   */\n\n  @Override\n  public\
+    \ void write(char[] cbuf, int off, int len) throws IOException {\n    checkNotClosed();\n\
+    \    // It turns out that creating a new String is usually as fast, or faster\n\
+    \    // than wrapping cbuf in a light-weight CharSequence.\n    target.append(new\
+    \ String(cbuf, off, len));\n  }\n\n  /*\n   * Override a few functions for performance\
+    \ reasons to avoid creating unnecessary strings.\n   */\n\n  @Override\n  public\
+    \ void write(int c) throws IOException {\n    checkNotClosed();\n    target.append((char)\
+    \ c);\n  }\n\n  @Override\n  public void write(String str) throws IOException\
+    \ {\n    checkNotNull(str);\n    checkNotClosed();\n    target.append(str);\n\
+    \  }\n\n  @Override\n  public void write(String str, int off, int len) throws\
+    \ IOException {\n    checkNotNull(str);\n    checkNotClosed();\n    // tricky:\
+    \ append takes start, end pair...\n    target.append(str, off, off + len);\n \
+    \ }\n\n  @Override\n  public void flush() throws IOException {\n    checkNotClosed();\n\
+    \    if (target instanceof Flushable) {\n      ((Flushable) target).flush();\n\
+    \    }\n  }\n\n  @Override\n  public void close() throws IOException {\n    this.closed\
+    \ = true;\n    if (target instanceof Closeable) {\n      ((Closeable) target).close();\n\
+    \    }\n  }\n\n  @Override\n  public Writer append(char c) throws IOException\
+    \ {\n    checkNotClosed();\n    target.append(c);\n    return this;\n  }\n\n \
+    \ @Override\n  public Writer append(@Nullable CharSequence charSeq) throws IOException\
+    \ {\n    checkNotClosed();\n    target.append(charSeq);\n    return this;\n  }\n\
+    \n  @Override\n  public Writer append(@Nullable CharSequence charSeq, int start,\
+    \ int end) throws IOException {\n    checkNotClosed();\n    target.append(charSeq,\
+    \ start, end);\n    return this;\n  }\n\n  private void checkNotClosed() throws\
+    \ IOException {\n    if (closed) {\n      throw new IOException(\"Cannot write\
+    \ to a closed writer.\");\n    }\n  }\n}\n\n### Source File Dependency Files Content\n\
+    ### Dependency File: GwtIncompatible.java\n/*\n * Copyright (C) 2009 The Guava\
+    \ Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\"\
+    ); you may not use this file except\n * in compliance with the License. You may\
+    \ obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.Documented;\n\
+    import java.lang.annotation.ElementType;\nimport java.lang.annotation.Retention;\n\
+    import java.lang.annotation.RetentionPolicy;\nimport java.lang.annotation.Target;\n\
+    \n/**\n * The presence of this annotation on an API indicates that the method\
+    \ may <em>not</em> be used with\n * the <a href=\"http://www.gwtproject.org/\"\
+    >Google Web Toolkit</a> (GWT).\n *\n * <p>This annotation behaves identically\
+    \ to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\nOutput the complete test file, code only,\
+    \ no explanations.\n### Time\nCurrent time: 2025-04-11 00:57:28\n"
+  role: user

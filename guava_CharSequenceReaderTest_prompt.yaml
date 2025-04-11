@@ -1,0 +1,110 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: guava\nSource File Path: guava/src/com/google/common/io/CharSequenceReader.java\n\
+    Test File Path: guava-tests/test/com/google/common/io/CharSequenceReaderTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (C) 2013 The Guava Authors\n\
+    \ *\n * Licensed under the Apache License, Version 2.0 (the \"License\"); you\
+    \ may not use this file except\n * in compliance with the License. You may obtain\
+    \ a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.io;\n\nimport static com.google.common.base.Preconditions.checkArgument;\n\
+    import static com.google.common.base.Preconditions.checkNotNull;\nimport static\
+    \ com.google.common.base.Preconditions.checkPositionIndexes;\nimport static java.lang.Math.min;\n\
+    import static java.util.Objects.requireNonNull;\n\nimport com.google.common.annotations.GwtIncompatible;\n\
+    import com.google.common.annotations.J2ktIncompatible;\nimport java.io.IOException;\n\
+    import java.io.Reader;\nimport java.nio.CharBuffer;\nimport org.jspecify.annotations.Nullable;\n\
+    \n/**\n * A {@link Reader} that reads the characters in a {@link CharSequence}.\
+    \ Like {@code StringReader},\n * but works with any {@link CharSequence}.\n *\n\
+    \ * @author Colin Decker\n */\n// TODO(cgdecker): make this public? as a type,\
+    \ or a method in CharStreams?\n@J2ktIncompatible\n@GwtIncompatible\nfinal class\
+    \ CharSequenceReader extends Reader {\n\n  private @Nullable CharSequence seq;\n\
+    \  private int pos;\n  private int mark;\n\n  /** Creates a new reader wrapping\
+    \ the given character sequence. */\n  public CharSequenceReader(CharSequence seq)\
+    \ {\n    this.seq = checkNotNull(seq);\n  }\n\n  private void checkOpen() throws\
+    \ IOException {\n    if (seq == null) {\n      throw new IOException(\"reader\
+    \ closed\");\n    }\n  }\n\n  private boolean hasRemaining() {\n    return remaining()\
+    \ > 0;\n  }\n\n  private int remaining() {\n    requireNonNull(seq); // safe as\
+    \ long as we call this only after checkOpen\n    return seq.length() - pos;\n\
+    \  }\n\n  /*\n   * To avoid the need to call requireNonNull so much, we could\
+    \ consider more clever approaches,\n   * such as:\n   *\n   * - Make checkOpen\
+    \ return the non-null `seq`. Then callers can assign that to a local variable\
+    \ or\n   *   even back to `this.seq`. However, that may suggest that we're defending\
+    \ against concurrent\n   *   mutation, which is not an actual risk because we\
+    \ use `synchronized`.\n   * - Make `remaining` require a non-null `seq` argument.\
+    \ But this is a bit weird because the\n   *   method, while it would avoid the\
+    \ instance field `seq` would still access the instance field\n   *   `pos`.\n\
+    \   */\n\n  @Override\n  public synchronized int read(CharBuffer target) throws\
+    \ IOException {\n    checkNotNull(target);\n    checkOpen();\n    requireNonNull(seq);\
+    \ // safe because of checkOpen\n    if (!hasRemaining()) {\n      return -1;\n\
+    \    }\n    int charsToRead = min(target.remaining(), remaining());\n    for (int\
+    \ i = 0; i < charsToRead; i++) {\n      target.put(seq.charAt(pos++));\n    }\n\
+    \    return charsToRead;\n  }\n\n  @Override\n  public synchronized int read()\
+    \ throws IOException {\n    checkOpen();\n    requireNonNull(seq); // safe because\
+    \ of checkOpen\n    return hasRemaining() ? seq.charAt(pos++) : -1;\n  }\n\n \
+    \ @Override\n  public synchronized int read(char[] cbuf, int off, int len) throws\
+    \ IOException {\n    checkPositionIndexes(off, off + len, cbuf.length);\n    checkOpen();\n\
+    \    requireNonNull(seq); // safe because of checkOpen\n    if (!hasRemaining())\
+    \ {\n      return -1;\n    }\n    int charsToRead = min(len, remaining());\n \
+    \   for (int i = 0; i < charsToRead; i++) {\n      cbuf[off + i] = seq.charAt(pos++);\n\
+    \    }\n    return charsToRead;\n  }\n\n  @Override\n  public synchronized long\
+    \ skip(long n) throws IOException {\n    checkArgument(n >= 0, \"n (%s) may not\
+    \ be negative\", n);\n    checkOpen();\n    int charsToSkip = (int) min(remaining(),\
+    \ n); // safe because remaining is an int\n    pos += charsToSkip;\n    return\
+    \ charsToSkip;\n  }\n\n  @Override\n  public synchronized boolean ready() throws\
+    \ IOException {\n    checkOpen();\n    return true;\n  }\n\n  @Override\n  public\
+    \ boolean markSupported() {\n    return true;\n  }\n\n  @Override\n  public synchronized\
+    \ void mark(int readAheadLimit) throws IOException {\n    checkArgument(readAheadLimit\
+    \ >= 0, \"readAheadLimit (%s) may not be negative\", readAheadLimit);\n    checkOpen();\n\
+    \    mark = pos;\n  }\n\n  @Override\n  public synchronized void reset() throws\
+    \ IOException {\n    checkOpen();\n    pos = mark;\n  }\n\n  @Override\n  public\
+    \ synchronized void close() throws IOException {\n    seq = null;\n  }\n}\n\n\
+    ### Source File Dependency Files Content\n### Dependency File: GwtIncompatible.java\n\
+    /*\n * Copyright (C) 2009 The Guava Authors\n *\n * Licensed under the Apache\
+    \ License, Version 2.0 (the \"License\"); you may not use this file except\n *\
+    \ in compliance with the License. You may obtain a copy of the License at\n *\n\
+    \ * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable\
+    \ law or agreed to in writing, software distributed under the License\n * is distributed\
+    \ on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either\
+    \ express\n * or implied. See the License for the specific language governing\
+    \ permissions and limitations under\n * the License.\n */\n\npackage com.google.common.annotations;\n\
+    \nimport java.lang.annotation.Documented;\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * the <a\
+    \ href=\"http://www.gwtproject.org/\">Google Web Toolkit</a> (GWT).\n *\n * <p>This\
+    \ annotation behaves identically to <a href=\n * \"http://www.gwtproject.org/javadoc/latest/com/google/gwt/core/shared/GwtIncompatible.html\"\
+    >the\n * {@code @GwtIncompatible} annotation in GWT itself</a>.\n *\n * @author\
+    \ Charles Fry\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@Documented\n\
+    @GwtCompatible\npublic @interface GwtIncompatible {\n  /**\n   * Describes why\
+    \ the annotated element is incompatible with GWT. Since this is generally due\
+    \ to a\n   * dependence on a type/method which GWT doesn't support, it is sufficient\
+    \ to simply reference the\n   * unsupported type/method. E.g. \"Class.isInstance\"\
+    .\n   *\n   * <p>As of Guava 20.0, this value is optional. We encourage authors\
+    \ who wish to describe why an\n   * API is {@code @GwtIncompatible} to instead\
+    \ leave an implementation comment.\n   */\n  String value() default \"\";\n}\n\
+    \n\n### Dependency File: J2ktIncompatible.java\n/*\n * Copyright (C) 2009 The\
+    \ Guava Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"\
+    License\"); you may not use this file except\n * in compliance with the License.\
+    \ You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software distributed\
+    \ under the License\n * is distributed on an \"AS IS\" BASIS, WITHOUT WARRANTIES\
+    \ OR CONDITIONS OF ANY KIND, either express\n * or implied. See the License for\
+    \ the specific language governing permissions and limitations under\n * the License.\n\
+    \ */\n\npackage com.google.common.annotations;\n\nimport java.lang.annotation.ElementType;\n\
+    import java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n\
+    import java.lang.annotation.Target;\n\n/**\n * The presence of this annotation\
+    \ on an API indicates that the method may <em>not</em> be used with\n * J2kt.\n\
+    \ *\n * @since 32.0.0\n */\n@Retention(RetentionPolicy.CLASS)\n@Target({ElementType.TYPE,\
+    \ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})\n@GwtCompatible\n\
+    public @interface J2ktIncompatible {}\n\nOutput the complete test file, code only,\
+    \ no explanations.\n### Time\nCurrent time: 2025-04-11 00:57:43\n"
+  role: user
