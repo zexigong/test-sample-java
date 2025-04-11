@@ -1,0 +1,40 @@
+entries:
+  - test_file: kafka\ClusterTest.java\ClusterTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/ClusterTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/Cluster.java
+
+  - test_file: kafka\KafkaFutureTest.java\KafkaFutureTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/KafkaFutureTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/KafkaFuture.java
+
+  - test_file: kafka\PartitionInfoTest.java\PartitionInfoTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/PartitionInfoTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/PartitionInfo.java
+
+  - test_file: kafka\TopicIdPartitionTest.java\TopicIdPartitionTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/TopicIdPartitionTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/TopicIdPartition.java
+
+  - test_file: kafka\TopicPartitionTest.java\TopicPartitionTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/TopicPartitionTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/TopicPartition.java
+
+  - test_file: kafka\UuidTest.java\UuidTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/UuidTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/Uuid.java
+
+  - test_file: kafka\AbstractIteratorTest.java\AbstractIteratorTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/utils/AbstractIteratorTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/utils/AbstractIterator.java
+
+  - test_file: kafka\ByteBufferInputStreamTest.java\ByteBufferInputStreamTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/utils/ByteBufferInputStreamTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/utils/ByteBufferInputStream.java
+
+  - test_file: kafka\BytesTest.java\BytesTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/utils/BytesTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/utils/Bytes.java
+
+  - test_file: kafka\ChecksumsTest.java\ChecksumsTest.java
+    test_display: clients/src/test/java/org/apache/kafka/common/utils/ChecksumsTest.java
+    source_display: clients/src/main/java/org/apache/kafka/common/utils/Checksums.java

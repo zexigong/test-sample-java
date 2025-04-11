@@ -1,0 +1,40 @@
+entries:
+  - test_file: elasticsearch\BackoffPolicyTests.java\BackoffPolicyTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/BackoffPolicyTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/BackoffPolicy.java
+
+  - test_file: elasticsearch\ExponentiallyWeightedMovingAverageTests.java\ExponentiallyWeightedMovingAverageTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/ExponentiallyWeightedMovingAverageTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/ExponentiallyWeightedMovingAverage.java
+
+  - test_file: elasticsearch\LocalTimeOffsetTests.java\LocalTimeOffsetTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/LocalTimeOffsetTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/LocalTimeOffset.java
+
+  - test_file: elasticsearch\NumbersTests.java\NumbersTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/NumbersTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/Numbers.java
+
+  - test_file: elasticsearch\ReferenceDocsTests.java\ReferenceDocsTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/ReferenceDocsTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/ReferenceDocs.java
+
+  - test_file: elasticsearch\TableTests.java\TableTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/TableTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/Table.java
+
+  - test_file: elasticsearch\TimeBasedUUIDGeneratorTests.java\TimeBasedUUIDGeneratorTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/TimeBasedUUIDGeneratorTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/TimeBasedUUIDGenerator.java
+
+  - test_file: elasticsearch\ArrayUtilsTests.java\ArrayUtilsTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/util/ArrayUtilsTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/util/ArrayUtils.java
+
+  - test_file: elasticsearch\BinarySearcherTests.java\BinarySearcherTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/util/BinarySearcherTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/util/BinarySearcher.java
+
+  - test_file: elasticsearch\ByteUtilsTests.java\ByteUtilsTests.java
+    test_display: server/src/test/java/org/elasticsearch/common/util/ByteUtilsTests.java
+    source_display: server/src/main/java/org/elasticsearch/common/util/ByteUtils.java

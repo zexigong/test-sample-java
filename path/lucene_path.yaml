@@ -1,0 +1,40 @@
+entries:
+  - test_file: lucene\TestArrayUtil.java\TestArrayUtil.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestArrayUtil.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/ArrayUtil.java
+
+  - test_file: lucene\TestAttributeSource.java\TestAttributeSource.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestAttributeSource.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/AttributeSource.java
+
+  - test_file: lucene\TestBitUtil.java\TestBitUtil.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestBitUtil.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/BitUtil.java
+
+  - test_file: lucene\TestByteBlockPool.java\TestByteBlockPool.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestByteBlockPool.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/ByteBlockPool.java
+
+  - test_file: lucene\TestBytesRef.java\TestBytesRef.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestBytesRef.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/BytesRef.java
+
+  - test_file: lucene\TestBytesRefArray.java\TestBytesRefArray.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestBytesRefArray.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/BytesRefArray.java
+
+  - test_file: lucene\TestCharsRef.java\TestCharsRef.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestCharsRef.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/CharsRef.java
+
+  - test_file: lucene\TestCharsRefBuilder.java\TestCharsRefBuilder.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestCharsRefBuilder.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/CharsRefBuilder.java
+
+  - test_file: lucene\TestClassLoaderUtils.java\TestClassLoaderUtils.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestClassLoaderUtils.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/ClassLoaderUtils.java
+
+  - test_file: lucene\TestCloseableThreadLocal.java\TestCloseableThreadLocal.java
+    test_display: lucene/core/src/test/org/apache/lucene/util/TestCloseableThreadLocal.java
+    source_display: lucene/core/src/java/org/apache/lucene/util/CloseableThreadLocal.java

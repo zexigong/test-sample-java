@@ -1,0 +1,40 @@
+entries:
+  - test_file: jenkins\BulkChangeTest.java\BulkChangeTest.java
+    test_display: core/src/test/java/hudson/BulkChangeTest.java
+    source_display: core/src/main/java/hudson/BulkChange.java
+
+  - test_file: jenkins\MarkupTextTest.java\MarkupTextTest.java
+    test_display: core/src/test/java/hudson/MarkupTextTest.java
+    source_display: core/src/main/java/hudson/MarkupText.java
+
+  - test_file: jenkins\DisplayNameListenerTest.java\DisplayNameListenerTest.java
+    test_display: core/src/test/java/hudson/model/DisplayNameListenerTest.java
+    source_display: core/src/main/java/hudson/model/DisplayNameListener.java
+
+  - test_file: jenkins\LineTransformationOutputStreamTest.java\LineTransformationOutputStreamTest.java
+    test_display: core/src/test/java/hudson/console/LineTransformationOutputStreamTest.java
+    source_display: core/src/main/java/hudson/console/LineTransformationOutputStream.java
+
+  - test_file: jenkins\UrlAnnotatorTest.java\UrlAnnotatorTest.java
+    test_display: core/src/test/java/hudson/console/UrlAnnotatorTest.java
+    source_display: core/src/main/java/hudson/console/UrlAnnotator.java
+
+  - test_file: jenkins\CronTabTest.java\CronTabTest.java
+    test_display: core/src/test/java/hudson/scheduler/CronTabTest.java
+    source_display: core/src/main/java/hudson/scheduler/CronTab.java
+
+  - test_file: jenkins\CompoundEnumerationTest.java\CompoundEnumerationTest.java
+    test_display: core/src/test/java/hudson/util/CompoundEnumerationTest.java
+    source_display: core/src/main/java/hudson/util/CompoundEnumeration.java
+
+  - test_file: jenkins\ConsistentHashTest.java\ConsistentHashTest.java
+    test_display: core/src/test/java/hudson/util/ConsistentHashTest.java
+    source_display: core/src/main/java/hudson/util/ConsistentHash.java
+
+  - test_file: jenkins\CyclicGraphDetectorTest.java\CyclicGraphDetectorTest.java
+    test_display: core/src/test/java/hudson/util/CyclicGraphDetectorTest.java
+    source_display: core/src/main/java/hudson/util/CyclicGraphDetector.java
+
+  - test_file: jenkins\FileChannelWriterTest.java\FileChannelWriterTest.java
+    test_display: core/src/test/java/hudson/util/FileChannelWriterTest.java
+    source_display: core/src/main/java/hudson/util/FileChannelWriter.java
