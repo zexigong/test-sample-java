@@ -1,0 +1,456 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/ByteBlockPool.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestByteBlockPool.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;\n\
+    \nimport java.util.Arrays;\n\n/**\n * This class enables the allocation of fixed-size\
+    \ buffers and their management as part of a buffer\n * array. Allocation is done\
+    \ through the use of an {@link Allocator} which can be customized, e.g.\n * to\
+    \ allow recycling old buffers. There are methods for writing ({@link #append(BytesRef)}\
+    \ and\n * reading from the buffers (e.g. {@link #readBytes(long, byte[], int,\
+    \ int)}, which handle\n * read/write operations across buffer boundaries.\n *\n\
+    \ * @lucene.internal\n */\npublic final class ByteBlockPool implements Accountable\
+    \ {\n  private static final long BASE_RAM_BYTES =\n      RamUsageEstimator.shallowSizeOfInstance(ByteBlockPool.class);\n\
+    \n  /**\n   * Use this to find the index of the buffer containing a byte, given\
+    \ an offset to that byte.\n   *\n   * <p>bufferUpto = globalOffset &gt;&gt; BYTE_BLOCK_SHIFT\n\
+    \   *\n   * <p>bufferUpto = globalOffset / BYTE_BLOCK_SIZE\n   */\n  public static\
+    \ final int BYTE_BLOCK_SHIFT = 15;\n\n  /** The size of each buffer in the pool.\
+    \ */\n  public static final int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;\n\n \
+    \ /**\n   * Use this to find the position of a global offset in a particular buffer.\n\
+    \   *\n   * <p>positionInCurrentBuffer = globalOffset &amp; BYTE_BLOCK_MASK\n\
+    \   *\n   * <p>positionInCurrentBuffer = globalOffset % BYTE_BLOCK_SIZE\n   */\n\
+    \  public static final int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;\n\n  /** Abstract\
+    \ class for allocating and freeing byte blocks. */\n  public abstract static class\
+    \ Allocator {\n    // TODO: ByteBlockPool assume the blockSize is always {@link\
+    \ BYTE_BLOCK_SIZE}, but this class\n    // allow arbitrary value of blockSize.\
+    \ We should make them consistent.\n    protected final int blockSize;\n\n    protected\
+    \ Allocator(int blockSize) {\n      this.blockSize = blockSize;\n    }\n\n   \
+    \ public abstract void recycleByteBlocks(byte[][] blocks, int start, int end);\n\
+    \n    public byte[] getByteBlock() {\n      return new byte[blockSize];\n    }\n\
+    \  }\n\n  /** A simple {@link Allocator} that never recycles. */\n  public static\
+    \ final class DirectAllocator extends Allocator {\n\n    public DirectAllocator()\
+    \ {\n      super(BYTE_BLOCK_SIZE);\n    }\n\n    @Override\n    public void recycleByteBlocks(byte[][]\
+    \ blocks, int start, int end) {}\n  }\n\n  /** A simple {@link Allocator} that\
+    \ never recycles, but tracks how much total RAM is in use. */\n  public static\
+    \ class DirectTrackingAllocator extends Allocator {\n    private final Counter\
+    \ bytesUsed;\n\n    public DirectTrackingAllocator(Counter bytesUsed) {\n    \
+    \  super(BYTE_BLOCK_SIZE);\n      this.bytesUsed = bytesUsed;\n    }\n\n    @Override\n\
+    \    public byte[] getByteBlock() {\n      bytesUsed.addAndGet(blockSize);\n \
+    \     return new byte[blockSize];\n    }\n\n    @Override\n    public void recycleByteBlocks(byte[][]\
+    \ blocks, int start, int end) {\n      bytesUsed.addAndGet(-((end - start) * blockSize));\n\
+    \      for (int i = start; i < end; i++) {\n        blocks[i] = null;\n      }\n\
+    \    }\n  }\n\n  /** Array of buffers currently used in the pool. Buffers are\
+    \ allocated if needed. */\n  private byte[][] buffers = new byte[10][];\n\n  /**\
+    \ index into the buffers array pointing to the current buffer used as the head\
+    \ */\n  private int bufferUpto = -1; // Which buffer we are upto\n\n  /** Where\
+    \ we are in the head buffer. */\n  public int byteUpto = BYTE_BLOCK_SIZE;\n\n\
+    \  /** Current head buffer. */\n  public byte[] buffer;\n\n  /**\n   * Offset\
+    \ from the start of the first buffer to the start of the current buffer, which\
+    \ is\n   * bufferUpto * BYTE_BLOCK_SIZE. The buffer pool maintains this offset\
+    \ because it is the first to\n   * overflow if there are too many allocated blocks.\n\
+    \   */\n  public int byteOffset = -BYTE_BLOCK_SIZE;\n\n  private final Allocator\
+    \ allocator;\n\n  public ByteBlockPool(Allocator allocator) {\n    this.allocator\
+    \ = allocator;\n  }\n\n  /**\n   * Expert: Resets the pool to its initial state,\
+    \ while optionally reusing the first buffer.\n   * Buffers that are not reused\
+    \ are reclaimed by {@link Allocator#recycleByteBlocks(byte[][], int,\n   * int)}.\
+    \ Buffers can be filled with zeros before recycling them. This is useful if a\
+    \ slice pool\n   * works on top of this byte pool and relies on the buffers being\
+    \ filled with zeros to find the\n   * non-zero end of slices.\n   *\n   * @param\
+    \ zeroFillBuffers if {@code true} the buffers are filled with {@code 0}. This\
+    \ should be\n   *     set to {@code true} if this pool is used with slices.\n\
+    \   * @param reuseFirst if {@code true} the first buffer will be reused and calling\
+    \ {@link\n   *     ByteBlockPool#nextBuffer()} is not needed after reset iff the\
+    \ block pool was used before\n   *     ie. {@link ByteBlockPool#nextBuffer()}\
+    \ was called before.\n   */\n  public void reset(boolean zeroFillBuffers, boolean\
+    \ reuseFirst) {\n    if (bufferUpto != -1) {\n      // We allocated at least one\
+    \ buffer\n\n      if (zeroFillBuffers) {\n        for (int i = 0; i < bufferUpto;\
+    \ i++) {\n          // Fully zero fill buffers that we fully used\n          Arrays.fill(buffers[i],\
+    \ (byte) 0);\n        }\n        // Partial zero fill the final buffer\n     \
+    \   Arrays.fill(buffers[bufferUpto], 0, byteUpto, (byte) 0);\n      }\n\n    \
+    \  if (bufferUpto > 0 || !reuseFirst) {\n        final int offset = reuseFirst\
+    \ ? 1 : 0;\n        // Recycle all but the first buffer\n        allocator.recycleByteBlocks(buffers,\
+    \ offset, 1 + bufferUpto);\n        Arrays.fill(buffers, offset, 1 + bufferUpto,\
+    \ null);\n      }\n      if (reuseFirst) {\n        // Re-use the first buffer\n\
+    \        bufferUpto = 0;\n        byteUpto = 0;\n        byteOffset = 0;\n   \
+    \     buffer = buffers[0];\n      } else {\n        bufferUpto = -1;\n       \
+    \ byteUpto = BYTE_BLOCK_SIZE;\n        byteOffset = -BYTE_BLOCK_SIZE;\n      \
+    \  buffer = null;\n      }\n    }\n  }\n\n  /**\n   * Allocates a new buffer and\
+    \ advances the pool to it. This method should be called once after the\n   * constructor\
+    \ to initialize the pool. In contrast to the constructor, a {@link\n   * ByteBlockPool#reset(boolean,\
+    \ boolean)} call will advance the pool to its first buffer\n   * immediately.\n\
+    \   */\n  public void nextBuffer() {\n    if (1 + bufferUpto == buffers.length)\
+    \ {\n      // The buffer array is full - expand it\n      byte[][] newBuffers\
+    \ =\n          new byte[ArrayUtil.oversize(buffers.length + 1, NUM_BYTES_OBJECT_REF)][];\n\
+    \      System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);\n      buffers\
+    \ = newBuffers;\n    }\n    // Allocate new buffer and advance the pool to it\n\
+    \    buffer = buffers[1 + bufferUpto] = allocator.getByteBlock();\n    bufferUpto++;\n\
+    \    byteUpto = 0;\n    byteOffset = Math.addExact(byteOffset, BYTE_BLOCK_SIZE);\n\
+    \  }\n\n  /**\n   * Fill the provided {@link BytesRef} with the bytes at the specified\
+    \ offset and length. This will\n   * avoid copying the bytes if the slice fits\
+    \ into a single block; otherwise, it uses the provided\n   * {@link BytesRefBuilder}\
+    \ to copy bytes over.\n   */\n  void setBytesRef(BytesRefBuilder builder, BytesRef\
+    \ result, long offset, int length) {\n    result.length = length;\n\n    int bufferIndex\
+    \ = Math.toIntExact(offset >> BYTE_BLOCK_SHIFT);\n    byte[] buffer = buffers[bufferIndex];\n\
+    \    int pos = (int) (offset & BYTE_BLOCK_MASK);\n    if (pos + length <= BYTE_BLOCK_SIZE)\
+    \ {\n      // Common case: The slice lives in a single block. Reference the buffer\
+    \ directly.\n      result.bytes = buffer;\n      result.offset = pos;\n    } else\
+    \ {\n      // Uncommon case: The slice spans at least 2 blocks, so we must copy\
+    \ the bytes.\n      builder.growNoCopy(length);\n      result.bytes = builder.get().bytes;\n\
+    \      result.offset = 0;\n      readBytes(offset, result.bytes, 0, length);\n\
+    \    }\n  }\n\n  /** Appends the bytes in the provided {@link BytesRef} at the\
+    \ current position. */\n  public void append(final BytesRef bytes) {\n    append(bytes.bytes,\
+    \ bytes.offset, bytes.length);\n  }\n\n  /**\n   * Append the bytes from a source\
+    \ {@link ByteBlockPool} at a given offset and length\n   *\n   * @param srcPool\
+    \ the source pool to copy from\n   * @param srcOffset the source pool offset\n\
+    \   * @param length the number of bytes to copy\n   */\n  public void append(ByteBlockPool\
+    \ srcPool, long srcOffset, int length) {\n    int bytesLeft = length;\n    while\
+    \ (bytesLeft > 0) {\n      int bufferLeft = BYTE_BLOCK_SIZE - byteUpto;\n    \
+    \  if (bytesLeft < bufferLeft) { // fits within current buffer\n        appendBytesSingleBuffer(srcPool,\
+    \ srcOffset, bytesLeft);\n        break;\n      } else { // fill up this buffer\
+    \ and move to next one\n        if (bufferLeft > 0) {\n          appendBytesSingleBuffer(srcPool,\
+    \ srcOffset, bufferLeft);\n          bytesLeft -= bufferLeft;\n          srcOffset\
+    \ += bufferLeft;\n        }\n        nextBuffer();\n      }\n    }\n  }\n\n  //\
+    \ copy from source pool until no bytes left. length must be fit within the current\
+    \ head buffer\n  private void appendBytesSingleBuffer(ByteBlockPool srcPool, long\
+    \ srcOffset, int length) {\n    assert length <= BYTE_BLOCK_SIZE - byteUpto;\n\
+    \    // doing a loop as the bytes to copy might span across multiple byte[] in\
+    \ srcPool\n    while (length > 0) {\n      byte[] srcBytes = srcPool.buffers[Math.toIntExact(srcOffset\
+    \ >> BYTE_BLOCK_SHIFT)];\n      int srcPos = Math.toIntExact(srcOffset & BYTE_BLOCK_MASK);\n\
+    \      int bytesToCopy = Math.min(length, BYTE_BLOCK_SIZE - srcPos);\n      System.arraycopy(srcBytes,\
+    \ srcPos, buffer, byteUpto, bytesToCopy);\n      length -= bytesToCopy;\n    \
+    \  srcOffset += bytesToCopy;\n      byteUpto += bytesToCopy;\n    }\n  }\n\n \
+    \ /**\n   * Append the provided byte array at the current position.\n   *\n  \
+    \ * @param bytes the byte array to write\n   */\n  public void append(final byte[]\
+    \ bytes) {\n    append(bytes, 0, bytes.length);\n  }\n\n  /**\n   * Append some\
+    \ portion of the provided byte array at the current position.\n   *\n   * @param\
+    \ bytes the byte array to write\n   * @param offset the offset of the byte array\n\
+    \   * @param length the number of bytes to write\n   */\n  public void append(final\
+    \ byte[] bytes, int offset, int length) {\n    int bytesLeft = length;\n    while\
+    \ (bytesLeft > 0) {\n      int bufferLeft = BYTE_BLOCK_SIZE - byteUpto;\n    \
+    \  if (bytesLeft < bufferLeft) {\n        // fits within current buffer\n    \
+    \    System.arraycopy(bytes, offset, buffer, byteUpto, bytesLeft);\n        byteUpto\
+    \ += bytesLeft;\n        break;\n      } else {\n        // fill up this buffer\
+    \ and move to next one\n        if (bufferLeft > 0) {\n          System.arraycopy(bytes,\
+    \ offset, buffer, byteUpto, bufferLeft);\n        }\n        nextBuffer();\n \
+    \       bytesLeft -= bufferLeft;\n        offset += bufferLeft;\n      }\n   \
+    \ }\n  }\n\n  /**\n   * Reads bytes out of the pool starting at the given offset\
+    \ with the given length into the given\n   * byte array at offset <code>off</code>.\n\
+    \   *\n   * <p>Note: this method allows to copy across block boundaries.\n   */\n\
+    \  public void readBytes(final long offset, final byte[] bytes, int bytesOffset,\
+    \ int bytesLength) {\n    int bytesLeft = bytesLength;\n    int bufferIndex =\
+    \ Math.toIntExact(offset >> BYTE_BLOCK_SHIFT);\n    int pos = (int) (offset &\
+    \ BYTE_BLOCK_MASK);\n    while (bytesLeft > 0) {\n      byte[] buffer = buffers[bufferIndex++];\n\
+    \      assert buffer != null;\n      int chunk = Math.min(bytesLeft, BYTE_BLOCK_SIZE\
+    \ - pos);\n      System.arraycopy(buffer, pos, bytes, bytesOffset, chunk);\n \
+    \     bytesOffset += chunk;\n      bytesLeft -= chunk;\n      pos = 0;\n    }\n\
+    \  }\n\n  /**\n   * Read a single byte at the given offset\n   *\n   * @param\
+    \ offset the offset to read\n   * @return the byte\n   */\n  public byte readByte(final\
+    \ long offset) {\n    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);\n\
+    \    int pos = (int) (offset & BYTE_BLOCK_MASK);\n    return buffers[bufferIndex][pos];\n\
+    \  }\n\n  @Override\n  public long ramBytesUsed() {\n    long size = BASE_RAM_BYTES;\n\
+    \    size += RamUsageEstimator.shallowSizeOf(buffers);\n    for (byte[] buf :\
+    \ buffers) {\n      size += RamUsageEstimator.sizeOfObject(buf);\n    }\n    return\
+    \ size;\n  }\n\n  /** the current position (in absolute value) of this byte pool\
+    \ */\n  public long getPosition() {\n    return bufferUpto * allocator.blockSize\
+    \ + byteUpto;\n  }\n\n  /** Retrieve the buffer at the specified index from the\
+    \ buffer pool. */\n  public byte[] getBuffer(int bufferIndex) {\n    return buffers[bufferIndex];\n\
+    \  }\n}\n\n### Source File Dependency Files Content\n### Dependency File: RamUsageEstimator.java\n\
+    /*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n *\
+    \ contributor license agreements.  See the NOTICE file distributed with\n * this\
+    \ work for additional information regarding copyright ownership.\n * The ASF licenses\
+    \ this file to You under the Apache License, Version 2.0\n * (the \"License\"\
+    ); you may not use this file except in compliance with\n * the License.  You may\
+    \ obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.lang.reflect.Array;\n\
+    import java.lang.reflect.Field;\nimport java.lang.reflect.Modifier;\nimport java.security.AccessControlException;\n\
+    import java.security.AccessController;\nimport java.security.PrivilegedAction;\n\
+    import java.text.DecimalFormat;\nimport java.text.DecimalFormatSymbols;\nimport\
+    \ java.util.Collection;\nimport java.util.Collections;\nimport java.util.IdentityHashMap;\n\
+    import java.util.Locale;\nimport java.util.Map;\nimport org.apache.lucene.index.Term;\n\
+    import org.apache.lucene.search.BooleanClause;\nimport org.apache.lucene.search.Query;\n\
+    import org.apache.lucene.search.QueryVisitor;\n\n/**\n * Estimates the size (memory\
+    \ representation) of Java objects.\n *\n * <p>This class uses assumptions that\
+    \ were discovered for the Hotspot virtual machine. If you use a\n * non-OpenJDK/Oracle-based\
+    \ JVM, the measurements may be slightly wrong.\n *\n * @see #shallowSizeOf(Object)\n\
+    \ * @see #shallowSizeOfInstance(Class)\n * @lucene.internal\n */\npublic final\
+    \ class RamUsageEstimator {\n\n  /** One kilobyte bytes. */\n  public static final\
+    \ long ONE_KB = 1024;\n\n  /** One megabyte bytes. */\n  public static final long\
+    \ ONE_MB = ONE_KB * ONE_KB;\n\n  /** One gigabyte bytes. */\n  public static final\
+    \ long ONE_GB = ONE_KB * ONE_MB;\n\n  /** No instantiation. */\n  private RamUsageEstimator()\
+    \ {}\n\n  /** True, iff compressed references (oops) are enabled by this JVM */\n\
+    \  public static final boolean COMPRESSED_REFS_ENABLED;\n\n  /** Number of bytes\
+    \ this JVM uses to represent an object reference. */\n  public static final int\
+    \ NUM_BYTES_OBJECT_REF;\n\n  /** Number of bytes to represent an object header\
+    \ (no fields, no alignments). */\n  public static final int NUM_BYTES_OBJECT_HEADER;\n\
+    \n  /** Number of bytes to represent an array header (no content, but with alignments).\
+    \ */\n  public static final int NUM_BYTES_ARRAY_HEADER;\n\n  /**\n   * A constant\
+    \ specifying the object alignment boundary inside the JVM. Objects will always\
+    \ take a\n   * full multiple of this constant, possibly wasting some space.\n\
+    \   */\n  public static final int NUM_BYTES_OBJECT_ALIGNMENT;\n\n  /**\n   * Approximate\
+    \ memory usage that we assign to all unknown queries - this maps roughly to a\n\
+    \   * BooleanQuery with a couple term clauses.\n   */\n  public static final int\
+    \ QUERY_DEFAULT_RAM_BYTES_USED = 1024;\n\n  /**\n   * Approximate memory usage\
+    \ that we assign to all unknown objects - this maps roughly to a few\n   * primitive\
+    \ fields and a couple short String-s.\n   */\n  public static final int UNKNOWN_DEFAULT_RAM_BYTES_USED\
+    \ = 256;\n\n  /** Sizes of primitive classes. */\n  public static final Map<Class<?>,\
+    \ Integer> primitiveSizes;\n\n  static {\n    Map<Class<?>, Integer> primitiveSizesMap\
+    \ = new IdentityHashMap<>();\n    primitiveSizesMap.put(boolean.class, 1);\n \
+    \   primitiveSizesMap.put(byte.class, 1);\n    primitiveSizesMap.put(char.class,\
+    \ Integer.valueOf(Character.BYTES));\n    primitiveSizesMap.put(short.class, Integer.valueOf(Short.BYTES));\n\
+    \    primitiveSizesMap.put(int.class, Integer.valueOf(Integer.BYTES));\n    primitiveSizesMap.put(float.class,\
+    \ Integer.valueOf(Float.BYTES));\n    primitiveSizesMap.put(double.class, Integer.valueOf(Double.BYTES));\n\
+    \    primitiveSizesMap.put(long.class, Integer.valueOf(Long.BYTES));\n\n    primitiveSizes\
+    \ = Collections.unmodifiableMap(primitiveSizesMap);\n  }\n\n  static final int\
+    \ INTEGER_SIZE, LONG_SIZE, STRING_SIZE;\n\n  /** For testing only */\n  static\
+    \ final boolean JVM_IS_HOTSPOT_64BIT;\n\n  /* Initialize constants and try to\
+    \ collect information about the JVM internals. */\n  static {\n    if (Constants.JRE_IS_64BIT)\
+    \ {\n      JVM_IS_HOTSPOT_64BIT = HotspotVMOptions.IS_HOTSPOT_VM;\n      // Try\
+    \ to get compressed oops and object alignment (the default seems to be 8 on Hotspot);\n\
+    \      // (this only works on 64 bit, on 32 bits the alignment and reference size\
+    \ is fixed):\n      COMPRESSED_REFS_ENABLED =\n          HotspotVMOptions.get(\"\
+    UseCompressedOops\").map(Boolean::valueOf).orElse(false);\n      NUM_BYTES_OBJECT_ALIGNMENT\
+    \ =\n          HotspotVMOptions.get(\"ObjectAlignmentInBytes\").map(Integer::valueOf).orElse(8);\n\
+    \      // reference size is 4, if we have compressed oops:\n      NUM_BYTES_OBJECT_REF\
+    \ = COMPRESSED_REFS_ENABLED ? 4 : 8;\n      // \"best guess\" based on reference\
+    \ size:\n      NUM_BYTES_OBJECT_HEADER = 8 + NUM_BYTES_OBJECT_REF;\n      // array\
+    \ header is NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT, but aligned (object alignment):\n\
+    \      NUM_BYTES_ARRAY_HEADER = (int) alignObjectSize(NUM_BYTES_OBJECT_HEADER\
+    \ + Integer.BYTES);\n    } else {\n      JVM_IS_HOTSPOT_64BIT = false;\n     \
+    \ COMPRESSED_REFS_ENABLED = false;\n      NUM_BYTES_OBJECT_ALIGNMENT = 8;\n  \
+    \    NUM_BYTES_OBJECT_REF = 4;\n      NUM_BYTES_OBJECT_HEADER = 8;\n      // For\
+    \ 32 bit JVMs, no extra alignment of array header:\n      NUM_BYTES_ARRAY_HEADER\
+    \ = NUM_BYTES_OBJECT_HEADER + Integer.BYTES;\n    }\n\n    INTEGER_SIZE = (int)\
+    \ shallowSizeOfInstance(Integer.class);\n    LONG_SIZE = (int) shallowSizeOfInstance(Long.class);\n\
+    \    STRING_SIZE = (int) shallowSizeOfInstance(String.class);\n  }\n\n  /** Approximate\
+    \ memory usage that we assign to a Hashtable / HashMap entry. */\n  public static\
+    \ final long HASHTABLE_RAM_BYTES_PER_ENTRY =\n      // key + value *\n      //\
+    \ hash tables need to be oversized to avoid collisions, assume 2x capacity\n \
+    \     (2L * NUM_BYTES_OBJECT_REF) * 2;\n\n  /** Approximate memory usage that\
+    \ we assign to a LinkedHashMap entry. */\n  public static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY\
+    \ =\n      HASHTABLE_RAM_BYTES_PER_ENTRY + 2L * NUM_BYTES_OBJECT_REF; // previous\
+    \ & next references\n\n  /** Aligns an object size to be the next multiple of\
+    \ {@link #NUM_BYTES_OBJECT_ALIGNMENT}. */\n  public static long alignObjectSize(long\
+    \ size) {\n    size += (long) NUM_BYTES_OBJECT_ALIGNMENT - 1L;\n    return size\
+    \ - (size % NUM_BYTES_OBJECT_ALIGNMENT);\n  }\n\n  /**\n   * Return the shallow\
+    \ size of the provided {@link Integer} object. Ignores the possibility that\n\
+    \   * this object is part of the VM IntegerCache\n   */\n  public static long\
+    \ sizeOf(Integer ignored) {\n    return INTEGER_SIZE;\n  }\n\n  /**\n   * Return\
+    \ the shallow size of the provided {@link Long} object. Ignores the possibility\
+    \ that this\n   * object is part of the VM LongCache\n   */\n  public static long\
+    \ sizeOf(Long ignored) {\n    return LONG_SIZE;\n  }\n\n  /** Returns the size\
+    \ in bytes of the byte[] object. */\n  public static long sizeOf(byte[] arr) {\n\
+    \    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + arr.length);\n  }\n\
+    \n  /** Returns the size in bytes of the boolean[] object. */\n  public static\
+    \ long sizeOf(boolean[] arr) {\n    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER\
+    \ + arr.length);\n  }\n\n  /** Returns the size in bytes of the char[] object.\
+    \ */\n  public static long sizeOf(char[] arr) {\n    return alignObjectSize((long)\
+    \ NUM_BYTES_ARRAY_HEADER + (long) Character.BYTES * arr.length);\n  }\n\n  /**\
+    \ Returns the size in bytes of the short[] object. */\n  public static long sizeOf(short[]\
+    \ arr) {\n    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Short.BYTES\
+    \ * arr.length);\n  }\n\n  /** Returns the size in bytes of the int[] object.\
+    \ */\n  public static long sizeOf(int[] arr) {\n    return alignObjectSize((long)\
+    \ NUM_BYTES_ARRAY_HEADER + (long) Integer.BYTES * arr.length);\n  }\n\n  /** Returns\
+    \ the size in bytes of the float[] object. */\n  public static long sizeOf(float[]\
+    \ arr) {\n    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Float.BYTES\
+    \ * arr.length);\n  }\n\n  /** Returns the size in bytes of the long[] object.\
+    \ */\n  public static long sizeOf(long[] arr) {\n    return alignObjectSize((long)\
+    \ NUM_BYTES_ARRAY_HEADER + (long) Long.BYTES * arr.length);\n  }\n\n  /** Returns\
+    \ the size in bytes of the double[] object. */\n  public static long sizeOf(double[]\
+    \ arr) {\n    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Double.BYTES\
+    \ * arr.length);\n  }\n\n  /** Returns the size in bytes of the String[] object.\
+    \ */\n  public static long sizeOf(String[] arr) {\n    long size = shallowSizeOf(arr);\n\
+    \    for (String s : arr) {\n      if (s == null) {\n        continue;\n     \
+    \ }\n      size += sizeOf(s);\n    }\n    return size;\n  }\n\n  /** Recurse only\
+    \ into immediate descendants. */\n  public static final int MAX_DEPTH = 1;\n\n\
+    \  /**\n   * Returns the size in bytes of a Map object, including sizes of its\
+    \ keys and values, supplying\n   * {@link #UNKNOWN_DEFAULT_RAM_BYTES_USED} when\
+    \ object type is not well known. This method\n   * recurses up to {@link #MAX_DEPTH}.\n\
+    \   */\n  public static long sizeOfMap(Map<?, ?> map) {\n    return sizeOfMap(map,\
+    \ 0, UNKNOWN_DEFAULT_RAM_BYTES_USED);\n  }\n\n  /**\n   * Returns the size in\
+    \ bytes of a Map object, including sizes of its keys and values, supplying\n \
+    \  * default object size when object type is not well known. This method recurses\
+    \ up to {@link\n   * #MAX_DEPTH}.\n   */\n  public static long sizeOfMap(Map<?,\
+    \ ?> map, long defSize) {\n    return sizeOfMap(map, 0, defSize);\n  }\n\n  private\
+    \ static long sizeOfMap(Map<?, ?> map, int depth, long defSize) {\n    if (map\
+    \ == null) {\n      return 0;\n    }\n    long size = shallowSizeOf(map);\n  \
+    \  if (depth > MAX_DEPTH) {\n      return size;\n    }\n    long sizeOfEntry =\
+    \ -1;\n    for (Map.Entry<?, ?> entry : map.entrySet()) {\n      if (sizeOfEntry\
+    \ == -1) {\n        sizeOfEntry = shallowSizeOf(entry);\n      }\n      size +=\
+    \ sizeOfEntry;\n      size += sizeOfObject(entry.getKey(), depth, defSize);\n\
+    \      size += sizeOfObject(entry.getValue(), depth, defSize);\n    }\n    return\
+    \ alignObjectSize(size);\n  }\n\n  /**\n   * Returns the size in bytes of a Collection\
+    \ object, including sizes of its values, supplying\n   * {@link #UNKNOWN_DEFAULT_RAM_BYTES_USED}\
+    \ when object type is not well known. This method\n   * recurses up to {@link\
+    \ #MAX_DEPTH}.\n   */\n  public static long sizeOfCollection(Collection<?> collection)\
+    \ {\n    return sizeOfCollection(collection, 0, UNKNOWN_DEFAULT_RAM_BYTES_USED);\n\
+    \  }\n\n  /**\n   * Returns the size in bytes of a Collection object, including\
+    \ sizes of its values, supplying\n   * default object size when object type is\
+    \ not well known. This method recurses up to {@link\n   * #MAX_DEPTH}.\n   */\n\
+    \  public static long sizeOfCollection(Collection<?> collection, long defSize)\
+    \ {\n    return sizeOfCollection(collection, 0, defSize);\n  }\n\n  private static\
+    \ long sizeOfCollection(Collection<?> collection, int depth, long defSize) {\n\
+    \    if (collection == null) {\n      return 0;\n    }\n    long size = shallowSizeOf(collection);\n\
+    \    if (depth > MAX_DEPTH) {\n      return size;\n    }\n    // assume array-backed\
+    \ collection and add per-object references\n    size += NUM_BYTES_ARRAY_HEADER\
+    \ + collection.size() * NUM_BYTES_OBJECT_REF;\n    for (Object o : collection)\
+    \ {\n      size += sizeOfObject(o, depth, defSize);\n    }\n    return alignObjectSize(size);\n\
+    \  }\n\n  private static final class RamUsageQueryVisitor extends QueryVisitor\
+    \ {\n    long total;\n    long defSize;\n    Query root;\n\n    RamUsageQueryVisitor(Query\
+    \ root, long defSize) {\n      this.root = root;\n      this.defSize = defSize;\n\
+    \      if (defSize > 0) {\n        total = defSize;\n      } else {\n        total\
+    \ = shallowSizeOf(root);\n      }\n    }\n\n    @Override\n    public void consumeTerms(Query\
+    \ query, Term... terms) {\n      if (query != root) {\n        if (defSize > 0)\
+    \ {\n          total += defSize;\n        } else {\n          total += shallowSizeOf(query);\n\
+    \        }\n      }\n      if (terms != null) {\n        total += sizeOf(terms);\n\
+    \      }\n    }\n\n    @Override\n    public void visitLeaf(Query query) {\n \
+    \     if (query == root) {\n        return;\n      }\n      if (query instanceof\
+    \ Accountable) {\n        total += ((Accountable) query).ramBytesUsed();\n   \
+    \   } else {\n        if (defSize > 0) {\n          total += defSize;\n      \
+    \  } else {\n          total += shallowSizeOf(query);\n        }\n      }\n  \
+    \  }\n\n    @Override\n    public QueryVisitor getSubVisitor(BooleanClause.Occur\
+    \ occur, Query parent) {\n      return this;\n    }\n  }\n\n  /**\n   * Returns\
+    \ the size in bytes of a Query object. Unknown query types will be estimated as\
+    \ {@link\n   * #QUERY_DEFAULT_RAM_BYTES_USED}.\n   */\n  public static long sizeOf(Query\
+    \ q) {\n    return sizeOf(q, QUERY_DEFAULT_RAM_BYTES_USED);\n  }\n\n  /**\n  \
+    \ * Returns the size in bytes of a Query object. Unknown query types will be estimated\
+    \ using {@link\n   * #shallowSizeOf(Object)}, or using the supplied <code>defSize</code>\
+    \ parameter if its value is\n   * greater than 0.\n   */\n  public static long\
+    \ sizeOf(Query q, long defSize) {\n    if (q instanceof Accountable) {\n     \
+    \ return ((Accountable) q).ramBytesUsed();\n    } else {\n      RamUsageQueryVisitor\
+    \ visitor = new RamUsageQueryVisitor(q, defSize);\n      q.visit(visitor);\n \
+    \     return alignObjectSize(visitor.total);\n    }\n  }\n\n  /**\n   * Best effort\
+    \ attempt to estimate the size in bytes of an undetermined object. Known types\
+    \ will\n   * be estimated according to their formulas, and all other object sizes\
+    \ will be estimated as\n   * {@link #UNKNOWN_DEFAULT_RAM_BYTES_USED}.\n   */\n\
+    \  public static long sizeOfObject(Object o) {\n    return sizeOfObject(o, 0,\
+    \ UNKNOWN_DEFAULT_RAM_BYTES_USED);\n  }\n\n  /**\n   * Best effort attempt to\
+    \ estimate the size in bytes of an undetermined object. Known types will\n   *\
+    \ be estimated according to their formulas, and all other object sizes will be\
+    \ estimated using\n   * {@link #shallowSizeOf(Object)}, or using the supplied\
+    \ <code>defSize</code> parameter if its\n   * value is greater than 0.\n   */\n\
+    \  public static long sizeOfObject(Object o, long defSize) {\n    return sizeOfObject(o,\
+    \ 0, defSize);\n  }\n\n  private static long sizeOfObject(Object o, int depth,\
+    \ long defSize) {\n    if (o == null) {\n      return 0;\n    }\n    long size;\n\
+    \    if (o instanceof Accountable) {\n      size = ((Accountable) o).ramBytesUsed();\n\
+    \    } else if (o instanceof String) {\n      size = sizeOf((String) o);\n   \
+    \ } else if (o instanceof boolean[]) {\n      size = sizeOf((boolean[]) o);\n\
+    \    } else if (o instanceof byte[]) {\n      size = sizeOf((byte[]) o);\n   \
+    \ } else if (o instanceof char[]) {\n      size = sizeOf((char[]) o);\n    } else\
+    \ if (o instanceof double[]) {\n      size = sizeOf((double[]) o);\n    } else\
+    \ if (o instanceof float[]) {\n      size = sizeOf((float[]) o);\n    } else if\
+    \ (o instanceof int[]) {\n      size = sizeOf((int[]) o);\n    } else if (o instanceof\
+    \ Integer) {\n      size = sizeOf((Integer) o);\n    } else if (o instanceof Long)\
+    \ {\n      size = sizeOf((Long) o);\n    } else if (o instanceof long[]) {\n \
+    \     size = sizeOf((long[]) o);\n    } else if (o instanceof short[]) {\n   \
+    \   size = sizeOf((short[]) o);\n    } else if (o instanceof String[]) {\n   \
+    \   size = sizeOf((String[]) o);\n    } else if (o instanceof Query) {\n     \
+    \ size = sizeOf((Query) o, defSize);\n    } else if (o instanceof Map) {\n   \
+    \   size = sizeOfMap((Map<?, ?>) o, ++depth, defSize);\n    } else if (o instanceof\
+    \ Collection) {\n      size = sizeOfCollection((Collection<?>) o, ++depth, defSize);\n\
+    \    } else {\n      if (defSize > 0) {\n        size = defSize;\n      } else\
+    \ {\n        size = shallowSizeOf(o);\n      }\n    }\n    return size;\n  }\n\
+    \n  /**\n   * Returns the size in bytes of the {@link Accountable} object, using\
+    \ its {@link\n   * Accountable#ramBytesUsed()} method.\n   */\n  public static\
+    \ long sizeOf(Accountable accountable) {\n    return accountable.ramBytesUsed();\n\
+    \  }\n\n  /** Returns the size in bytes of the String object. */\n  public static\
+    \ long sizeOf(String s) {\n    if (s == null) {\n      return 0;\n    }\n    //\
+    \ may not be true in Java 9+ and CompactStrings - but we have no way to determine\
+    \ this\n\n    // char[] + hashCode\n    long size = STRING_SIZE + (long) NUM_BYTES_ARRAY_HEADER\
+    \ + (long) Character.BYTES * s.length();\n    return alignObjectSize(size);\n\
+    \  }\n\n  /** Returns the size in bytes of the byte[] object. */\n  public static\
+    \ long shallowSizeOf(byte[] arr) {\n    return sizeOf(arr);\n  }\n\n  /** Returns\
+    \ the size in bytes of the boolean[] object. */\n  public static long shallowSizeOf(boolean[]\
+    \ arr) {\n    return sizeOf(arr);\n  }\n\n  /** Returns the size in bytes of the\
+    \ char[] object. */\n  public static long shallowSizeOf(char[] arr) {\n    return\
+    \ sizeOf(arr);\n  }\n\n  /** Returns the size in bytes of the short[] object.\
+    \ */\n  public static long shallowSizeOf(short[] arr) {\n    return sizeOf(arr);\n\
+    \  }\n\n  /** Returns the size in bytes of the int[] object. */\n  public static\
+    \ long shallowSizeOf(int[] arr) {\n    return sizeOf(arr);\n  }\n\n  /** Returns\
+    \ the size in bytes of the float[] object. */\n  public static long shallowSizeOf(float[]\
+    \ arr) {\n    return sizeOf(arr);\n  }\n\n  /** Returns the size in bytes of the\
+    \ long[] object. */\n  public static long shallowSizeOf(long[] arr) {\n    return\
+    \ sizeOf(arr);\n  }\n\n  /** Returns the size in bytes of the double[] object.\
+    \ */\n  public static long shallowSizeOf(double[] arr) {\n    return sizeOf(arr);\n\
+    \  }\n\n  /** Returns the shallow size in bytes of the Object[] object. */\n \
+    \ // Use this method instead of #shallowSizeOf(Object) to avoid costly reflection\n\
+    \  public static long shallowSizeOf(Object[] arr) {\n    return alignObjectSize(\n\
+    \        (long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_OBJECT_REF * arr.length);\n\
+    \  }\n\n  /**\n   * Estimates a \"shallow\" memory usage of the given object.\
+    \ For arrays, this will be the memory\n   * taken by array storage (no subreferences\
+    \ will be followed). For objects, this will be the\n   * memory taken by the fields.\n\
+    \   *\n   * <p>JVM object alignments are also applied.\n   */\n  public static\
+    \ long shallowSizeOf(Object obj) {\n    if (obj == null) return 0;\n    final\
+    \ Class<?> clz = obj.getClass();\n    if (clz.isArray()) {\n      return shallowSizeOfArray(obj);\n\
+    \    } else {\n      return shallowSizeOfInstance(clz);\n    }\n  }\n\n  /**\n\
+    \   * Returns the shallow instance size in bytes an instance of the given class\
+    \ would occupy. This\n   * works with all conventional classes and primitive types,\
+    \ but not with arrays (the size then\n   * depends on the number of elements and\
+    \ varies from object to object).\n   *\n   * @see #shallowSizeOf(Object)\n   *\
+    \ @throws IllegalArgumentException if {@code clazz} is an array class.\n   */\n\
+    \  public static long shallowSizeOfInstance(Class<?> clazz) {\n    if (clazz.isArray())\n\
+    \      throw new IllegalArgumentException(\"This method does not work with array\
+    \ classes.\");\n    if (clazz.isPrimitive()) return primitiveSizes.get(clazz);\n\
+    \n    long size = NUM_BYTES_OBJECT_HEADER;\n\n    // Walk type hierarchy\n   \
+    \ for (; clazz != null; clazz = clazz.getSuperclass()) {\n      final Class<?>\
+    \ target = clazz;\n      final Field[] fields;\n      try {\n        fields =\
+    \ doPrivileged((PrivilegedAction<Field[]>) target::getDeclaredFields);\n     \
+    \ } catch (\n          @SuppressWarnings(\"removal\")\n          AccessControlException\
+    \ e) {\n        throw new RuntimeException(\"Can't access fields of class: \"\
+    \ + target, e);\n      }\n\n      for (Field f : fields) {\n        if (!Modifier.isStatic(f.getModifiers()))\
+    \ {\n          size = adjustForField(size, f);\n        }\n      }\n    }\n  \
+    \  return alignObjectSize(size);\n  }\n\n  // Extracted to a method to give the\
+    \ SuppressForbidden annotation the smallest possible scope\n  @SuppressWarnings(\"\
+    removal\")\n  @SuppressForbidden(reason = \"security manager\")\n  private static\
+    \ <T> T doPrivileged(PrivilegedAction<T> action) {\n    return AccessController.doPrivileged(action);\n\
+    \  }\n\n  /** Return shallow size of any <code>array</code>. */\n  private static\
+    \ long shallowSizeOfArray(Object array) {\n    long size = NUM_BYTES_ARRAY_HEADER;\n\
+    \    final int len = Array.getLength(array);\n    if (len > 0) {\n      Class<?>\
+    \ arrayElementClazz = array.getClass().getComponentType();\n      if (arrayElementClazz.isPrimitive())\
+    \ {\n        size += (long) len * primitiveSizes.get(arrayElementClazz);\n   \
+    \   } else {\n        size += (long) NUM_BYTES_OBJECT_REF * len;\n      }\n  \
+    \  }\n    return alignObjectSize(size);\n  }\n\n  /**\n   * This method returns\
+    \ the maximum representation size of an object. <code>sizeSoFar</code> is the\n\
+    \   * object's size measured so far. <code>f</code> is the field being probed.\n\
+    \   *\n   * <p>The returned offset will be the maximum of whatever was measured\
+    \ so far and <code>f</code>\n   * field's offset and representation size (unaligned).\n\
+    \   */\n  public static long adjustForField(long sizeSoFar, final Field f) {\n\
+    \    final Class<?> type = f.getType();\n    final int fsize = type.isPrimitive()\
+    \ ? primitiveSizes.get(type) : NUM_BYTES_OBJECT_REF;\n    // TODO: No alignments\
+    \ based on field type/ subclass fields alignments?\n    return sizeSoFar + fsize;\n\
+    \  }\n\n  /** Returns <code>size</code> in human-readable units (GB, MB, KB or\
+    \ bytes). */\n  public static String humanReadableUnits(long bytes) {\n    return\
+    \ humanReadableUnits(\n        bytes, new DecimalFormat(\"0.#\", DecimalFormatSymbols.getInstance(Locale.ROOT)));\n\
+    \  }\n\n  /** Returns <code>size</code> in human-readable units (GB, MB, KB or\
+    \ bytes). */\n  public static String humanReadableUnits(long bytes, DecimalFormat\
+    \ df) {\n    if (bytes / ONE_GB > 0) {\n      return df.format((float) bytes /\
+    \ ONE_GB) + \" GB\";\n    } else if (bytes / ONE_MB > 0) {\n      return df.format((float)\
+    \ bytes / ONE_MB) + \" MB\";\n    } else if (bytes / ONE_KB > 0) {\n      return\
+    \ df.format((float) bytes / ONE_KB) + \" KB\";\n    } else {\n      return bytes\
+    \ + \" bytes\";\n    }\n  }\n\n  /**\n   * Return the size of the provided array\
+    \ of {@link Accountable}s by summing up the shallow size of\n   * the array and\
+    \ the {@link Accountable#ramBytesUsed() memory usage} reported by each {@link\n\
+    \   * Accountable}.\n   */\n  public static long sizeOf(Accountable[] accountables)\
+    \ {\n    long size = shallowSizeOf(accountables);\n    for (Accountable accountable\
+    \ : accountables) {\n      if (accountable != null) {\n        size += accountable.ramBytesUsed();\n\
+    \      }\n    }\n    return size;\n  }\n}\n\nOutput the complete test file, code\
+    \ only, no explanations.\n### Time\nCurrent time: 2025-04-11 13:21:50\n"
+  role: user

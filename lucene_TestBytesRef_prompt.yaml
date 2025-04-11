@@ -1,0 +1,105 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/BytesRef.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestBytesRef.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.util.Arrays;\n\
+    \n/**\n * Represents byte[], as a slice (offset + length) into an existing byte[].\
+    \ The {@link #bytes}\n * member should never be null; use {@link #EMPTY_BYTES}\
+    \ if necessary.\n *\n * <p><b>Important note:</b> Unless otherwise noted, Lucene\
+    \ uses this class to represent terms that\n * are encoded as <b>UTF8</b> bytes\
+    \ in the index. To convert them to a Java {@link String} (which is\n * UTF16),\
+    \ use {@link #utf8ToString}. Using code like {@code new String(bytes, offset,\
+    \ length)} to\n * do this is <b>wrong</b>, as it does not respect the correct\
+    \ character set and may return wrong\n * results (depending on the platform's\
+    \ defaults)!\n *\n * <p>{@code BytesRef} implements {@link Comparable}. The underlying\
+    \ byte arrays are sorted\n * lexicographically, numerically treating elements\
+    \ as unsigned. This is identical to Unicode\n * codepoint order.\n */\npublic\
+    \ final class BytesRef implements Comparable<BytesRef>, Cloneable {\n  /** An\
+    \ empty byte array for convenience */\n  public static final byte[] EMPTY_BYTES\
+    \ = new byte[0];\n\n  /** The contents of the BytesRef. Should never be {@code\
+    \ null}. */\n  public byte[] bytes;\n\n  /** Offset of first valid byte. */\n\
+    \  public int offset;\n\n  /** Length of used bytes. */\n  public int length;\n\
+    \n  /** Create a BytesRef with {@link #EMPTY_BYTES} */\n  public BytesRef() {\n\
+    \    this(EMPTY_BYTES);\n  }\n\n  /** This instance will directly reference bytes\
+    \ w/o making a copy. bytes should not be null. */\n  public BytesRef(byte[] bytes,\
+    \ int offset, int length) {\n    this.bytes = bytes;\n    this.offset = offset;\n\
+    \    this.length = length;\n    assert isValid();\n  }\n\n  /** This instance\
+    \ will directly reference bytes w/o making a copy. bytes should not be null */\n\
+    \  public BytesRef(byte[] bytes) {\n    this(bytes, 0, bytes.length);\n  }\n\n\
+    \  /**\n   * Create a BytesRef pointing to a new array of size <code>capacity</code>.\
+    \ Offset and length will\n   * both be zero.\n   */\n  public BytesRef(int capacity)\
+    \ {\n    this.bytes = capacity == 0 ? EMPTY_BYTES : new byte[capacity];\n  }\n\
+    \n  /**\n   * Initialize the byte[] from the UTF8 bytes for the provided String.\n\
+    \   *\n   * @param text This must be well-formed unicode text, with no unpaired\
+    \ surrogates.\n   */\n  public BytesRef(CharSequence text) {\n    this(UnicodeUtil.maxUTF8Length(text.length()));\n\
+    \    length = UnicodeUtil.UTF16toUTF8(text, 0, text.length(), bytes);\n  }\n\n\
+    \  /**\n   * Expert: compares the bytes against another BytesRef, returning true\
+    \ if the bytes are equal.\n   *\n   * @param other Another BytesRef, should not\
+    \ be null.\n   * @lucene.internal\n   */\n  public boolean bytesEquals(BytesRef\
+    \ other) {\n    return Arrays.equals(\n        this.bytes,\n        this.offset,\n\
+    \        this.offset + this.length,\n        other.bytes,\n        other.offset,\n\
+    \        other.offset + other.length);\n  }\n\n  /**\n   * Returns a shallow clone\
+    \ of this instance (the underlying bytes are <b>not</b> copied and will\n   *\
+    \ be shared by both the returned object and this object.\n   *\n   * @see #deepCopyOf\n\
+    \   */\n  @Override\n  public BytesRef clone() {\n    return new BytesRef(bytes,\
+    \ offset, length);\n  }\n\n  /**\n   * Calculates the hash code as required by\
+    \ TermsHash during indexing.\n   *\n   * <p>This is currently implemented as MurmurHash3\
+    \ (32 bit), using the seed from {@link\n   * StringHelper#GOOD_FAST_HASH_SEED},\
+    \ but is subject to change from release to release.\n   */\n  @Override\n  public\
+    \ int hashCode() {\n    return StringHelper.murmurhash3_x86_32(this, StringHelper.GOOD_FAST_HASH_SEED);\n\
+    \  }\n\n  @Override\n  public boolean equals(Object other) {\n    if (other ==\
+    \ null) {\n      return false;\n    }\n    if (other instanceof BytesRef) {\n\
+    \      return this.bytesEquals((BytesRef) other);\n    }\n    return false;\n\
+    \  }\n\n  /**\n   * Interprets stored bytes as UTF-8 bytes, returning the resulting\
+    \ string. May throw an {@link\n   * AssertionError} or a {@link RuntimeException}\
+    \ if the data is not well-formed UTF-8.\n   */\n  public String utf8ToString()\
+    \ {\n    final char[] ref = new char[length];\n    final int len = UnicodeUtil.UTF8toUTF16(bytes,\
+    \ offset, length, ref);\n    return new String(ref, 0, len);\n  }\n\n  /** Returns\
+    \ hex encoded bytes, e.g. \"[6c 75 63 65 6e 65]\" */\n  @Override\n  public String\
+    \ toString() {\n    StringBuilder sb = new StringBuilder(2 + 3 * length);\n  \
+    \  sb.append('[');\n    final int end = offset + length;\n    for (int i = offset;\
+    \ i < end; i++) {\n      if (i > offset) {\n        sb.append(' ');\n      }\n\
+    \      sb.append(Integer.toHexString(bytes[i] & 0xff));\n    }\n    sb.append(']');\n\
+    \    return sb.toString();\n  }\n\n  /** Unsigned byte order comparison */\n \
+    \ @Override\n  public int compareTo(BytesRef other) {\n    return Arrays.compareUnsigned(\n\
+    \        this.bytes,\n        this.offset,\n        this.offset + this.length,\n\
+    \        other.bytes,\n        other.offset,\n        other.offset + other.length);\n\
+    \  }\n\n  /**\n   * Creates a new BytesRef that points to a copy of the bytes\
+    \ from <code>other</code>\n   *\n   * <p>The returned BytesRef will have a length\
+    \ of other.length and an offset of zero.\n   */\n  public static BytesRef deepCopyOf(BytesRef\
+    \ other) {\n    return new BytesRef(\n        ArrayUtil.copyOfSubArray(other.bytes,\
+    \ other.offset, other.offset + other.length),\n        0,\n        other.length);\n\
+    \  }\n\n  /** Performs internal consistency checks. Always returns true (or throws\
+    \ IllegalStateException) */\n  public boolean isValid() {\n    if (bytes == null)\
+    \ {\n      throw new IllegalStateException(\"bytes is null\");\n    }\n    if\
+    \ (length < 0) {\n      throw new IllegalStateException(\"length is negative:\
+    \ \" + length);\n    }\n    if (length > bytes.length) {\n      throw new IllegalStateException(\n\
+    \          \"length is out of bounds: \" + length + \",bytes.length=\" + bytes.length);\n\
+    \    }\n    if (offset < 0) {\n      throw new IllegalStateException(\"offset\
+    \ is negative: \" + offset);\n    }\n    if (offset > bytes.length) {\n      throw\
+    \ new IllegalStateException(\n          \"offset out of bounds: \" + offset +\
+    \ \",bytes.length=\" + bytes.length);\n    }\n    if (offset + length < 0) {\n\
+    \      throw new IllegalStateException(\n          \"offset+length is negative:\
+    \ offset=\" + offset + \",length=\" + length);\n    }\n    if (offset + length\
+    \ > bytes.length) {\n      throw new IllegalStateException(\n          \"offset+length\
+    \ out of bounds: offset=\"\n              + offset\n              + \",length=\"\
+    \n              + length\n              + \",bytes.length=\"\n              +\
+    \ bytes.length);\n    }\n    return true;\n  }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: empty.txt\n\nOutput the complete test file,\
+    \ code only, no explanations.\n### Time\nCurrent time: 2025-04-11 13:23:58\n"
+  role: user

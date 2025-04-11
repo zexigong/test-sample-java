@@ -1,0 +1,194 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: mockito\nSource File Path: mockito-core/src/main/java/org/mockito/ArgumentCaptor.java\n\
+    Test File Path: mockito-core/src/test/java/org/mockito/ArgumentCaptorTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (c) 2007 Mockito contributors\n\
+    \ * This program is made available under the terms of the MIT License.\n */\n\
+    package org.mockito;\n\nimport static org.mockito.internal.util.Primitives.defaultValue;\n\
+    \nimport java.util.List;\n\nimport org.mockito.internal.matchers.CapturingMatcher;\n\
+    \n/**\n * Use it to capture argument values for further assertions.\n *\n * <p>\n\
+    \ * Mockito verifies argument values in natural java style: by using an equals()\
+    \ method.\n * This is also the recommended way of matching arguments because it\
+    \ makes tests clean and simple.\n * In some situations though, it is helpful to\
+    \ assert on certain arguments after the actual verification.\n * For example:\n\
+    \ * <pre class=\"code\"><code class=\"java\">\n *   ArgumentCaptor&lt;Person&gt;\
+    \ argument = ArgumentCaptor.forClass(Person.class);\n *   verify(mock).doSomething(argument.capture());\n\
+    \ *   assertEquals(\"John\", argument.getValue().getName());\n * </code></pre>\n\
+    \ *\n * Example of capturing varargs:\n * <pre class=\"code\"><code class=\"java\"\
+    >\n *   //capturing varargs:\n *   ArgumentCaptor&lt;Person&gt; varArgs = ArgumentCaptor.forClass(Person.class);\n\
+    \ *   verify(mock).varArgMethod(varArgs.capture());\n *   List expected = asList(new\
+    \ Person(\"John\"), new Person(\"Jane\"));\n *   assertEquals(expected, varArgs.getAllValues());\n\
+    \ * </code></pre>\n *\n * <p>\n * <strong>Warning:</strong> it is recommended\
+    \ to use ArgumentCaptor with verification <strong>but not</strong> with stubbing.\n\
+    \ * Using ArgumentCaptor with stubbing may decrease test readability because captor\
+    \ is created\n * outside of assertion (aka verify or 'then') blocks.\n * It may\
+    \ also reduce defect localization because if the stubbed method was not called,\
+    \ then no argument is captured.\n *\n * <p>\n * In a way ArgumentCaptor is related\
+    \ to custom argument matchers (see javadoc for {@link ArgumentMatcher} class).\n\
+    \ * Both techniques can be used for making sure certain arguments were passed\
+    \ to mock objects.\n * However, ArgumentCaptor may be a better fit if:\n * <ul>\n\
+    \ * <li>custom argument matcher is not likely to be reused</li>\n * <li>you just\
+    \ need it to assert on argument values to complete verification</li>\n * </ul>\n\
+    \ * Custom argument matchers via {@link ArgumentMatcher} are usually better for\
+    \ stubbing.\n *\n * <p>\n * This utility class <strong>will</strong> perform type\
+    \ checking on the generic type (since Mockito 5.0.0).\n * <p>\n * There is an\
+    \ <strong>annotation</strong> that you might find useful: &#64;{@link Captor}\n\
+    \ * <p>\n * See the full documentation on Mockito in javadoc for {@link Mockito}\
+    \ class.\n *\n * @see Captor\n * @since 1.8.0\n */\n@CheckReturnValue\npublic\
+    \ class ArgumentCaptor<T> {\n\n    private final CapturingMatcher<T> capturingMatcher;\n\
+    \    private final Class<? extends T> clazz;\n\n    private ArgumentCaptor(Class<?\
+    \ extends T> clazz) {\n        this.clazz = clazz;\n        this.capturingMatcher\
+    \ = new CapturingMatcher<>(clazz);\n    }\n\n    /**\n     * Use it to capture\
+    \ the argument. This method <b>must be used inside of verification</b>.\n    \
+    \ * <p>\n     * Internally, this method registers a special implementation of\
+    \ an {@link ArgumentMatcher}.\n     * This argument matcher stores the argument\
+    \ value so that you can use it later to perform assertions.\n     * <p>\n    \
+    \ * See examples in javadoc for {@link ArgumentCaptor} class.\n     *\n     *\
+    \ @return null or default values\n     */\n    public T capture() {\n        T\
+    \ ignored = Mockito.argThat(capturingMatcher);\n        return defaultValue(clazz);\n\
+    \    }\n\n    /**\n     * Returns the captured value of the argument. When capturing\
+    \ varargs use {@link #getAllValues()}.\n     * <p>\n     * If verified method\
+    \ was called multiple times then this method returns the latest captured value.\n\
+    \     * <p>\n     * See examples in javadoc for {@link ArgumentCaptor} class.\n\
+    \     *\n     * @return captured argument value\n     */\n    public T getValue()\
+    \ {\n        return this.capturingMatcher.getLastValue();\n    }\n\n    /**\n\
+    \     * Returns all captured values. Use it when capturing varargs or when the\
+    \ verified method was called multiple times.\n     * When varargs method was called\
+    \ multiple times, this method returns merged list of all values from all invocations.\n\
+    \     * <p>\n     * Example:\n     * <pre class=\"code\"><code class=\"java\"\
+    >\n     *   mock.doSomething(new Person(\"John\");\n     *   mock.doSomething(new\
+    \ Person(\"Jane\");\n     *\n     *   ArgumentCaptor&lt;Person&gt; peopleCaptor\
+    \ = ArgumentCaptor.forClass(Person.class);\n     *   verify(mock, times(2)).doSomething(peopleCaptor.capture());\n\
+    \     *\n     *   List&lt;Person&gt; capturedPeople = peopleCaptor.getAllValues();\n\
+    \     *   assertEquals(\"John\", capturedPeople.get(0).getName());\n     *   assertEquals(\"\
+    Jane\", capturedPeople.get(1).getName());\n     * </pre>\n     *\n     * Example\
+    \ of capturing varargs:\n     * <pre class=\"code\"><code class=\"java\">\n  \
+    \   *   mock.countPeople(new Person(\"John\"), new Person(\"Jane\"); //vararg\
+    \ method\n     *\n     *   ArgumentCaptor&lt;Person&gt; peopleCaptor = ArgumentCaptor.forClass(Person.class);\n\
+    \     *\n     *   verify(mock).countPeople(peopleCaptor.capture());\n     *\n\
+    \     *   List expected = asList(new Person(\"John\"), new Person(\"Jane\"));\n\
+    \     *   assertEquals(expected, peopleCaptor.getAllValues());\n     * </code></pre>\n\
+    \     * See more examples in javadoc for {@link ArgumentCaptor} class.\n     *\n\
+    \     * @return captured argument value\n     */\n    public List<T> getAllValues()\
+    \ {\n        return this.capturingMatcher.getAllValues();\n    }\n\n    /**\n\
+    \     * Build a new <code>ArgumentCaptor</code>.\n     * <p>\n     * An <code>ArgumentCaptor</code>\
+    \ will perform type checks (since Mockito 5.0.0).\n     *\n     * @param clazz\
+    \ Type matching the parameter to be captured.\n     * @param <S> Type of clazz\n\
+    \     * @param <U> Type of object captured by the newly built ArgumentCaptor\n\
+    \     * @return A new ArgumentCaptor\n     */\n    public static <U, S extends\
+    \ U> ArgumentCaptor<U> forClass(Class<S> clazz) {\n        return new ArgumentCaptor<>(clazz);\n\
+    \    }\n\n    /**\n     * Build a new <code>ArgumentCaptor</code> by inferring\
+    \ the class type.\n     * <p>\n     * This enables inferring the generic type\
+    \ of an argument captor without\n     * providing a raw class reference, which\
+    \ enables working around generic\n     * limitations of the Java compiler without\
+    \ producing compile-time warnings\n     * unlike {@link #forClass} which would\
+    \ require explicit casting or warning\n     * suppression.\n     * <p>\n     *\
+    \ Example usage:\n     *\n     * <pre class=\"code\"><code class=\"java\">\n \
+    \    *   // Given\n     *   UserRepository repository = mock();\n     *   UserService\
+    \ service = new UserService(repository);\n     *\n     *   Map&lt;String, User&gt;\
+    \ expectedUsers = Map.of(\n     *       \"12345\", new User(\"12345\", \"Bob\"\
+    ),\n     *       \"45678\", new User(\"45678\", \"Dave\")\n     *   );\n     *\n\
+    \     *   ArgumentCaptor&lt;Map&lt;String, User&gt;&gt; captor = ArgumentCaptor.captor();\n\
+    \     *\n     *   doNothing().when(repository).storeUsers(captor.capture());\n\
+    \     *\n     *   // When\n     *   service.createUsers(List.of(\n     *     \
+    \  new User(\"12345\", \"Bob\"),\n     *       new User(\"45678\", \"Dave\")\n\
+    \     *   ));\n     *\n     *   // Then\n     *   Map&lt;String, User&gt; actualUsers\
+    \ = captor.getValue();\n     *\n     *   assertThat(expectedUsers).isEqualTo(actualUsers);\n\
+    \     * </code></pre>\n     *\n     * @param reified do not pass any value here.\
+    \ This is used to trick the compiler\n     *     into reifying the return type\
+    \ without needing casts.\n     * @param <U> the type of argument to be captured\
+    \ by this captor.\n     * @return A new ArgumentCaptor.\n     * @throws IllegalArgumentException\
+    \ if any arguments are passed to this method.\n     * @since 5.7.0\n     */\n\
+    \    @SafeVarargs\n    @SuppressWarnings({\"varargs\", \"unchecked\"})\n    public\
+    \ static <U> ArgumentCaptor<U> captor(U... reified) {\n        if (reified ==\
+    \ null || reified.length > 0) {\n            throw new IllegalArgumentException(\"\
+    Do not provide any arguments to the 'captor' call\");\n        }\n\n        return\
+    \ forClass((Class<U>) reified.getClass().getComponentType());\n    }\n\n    /**\n\
+    \     * Get the raw class being captured.\n     *\n     * @return the raw class\
+    \ that is being captured by this captor.\n     */\n    Class<? extends T> getCaptorType()\
+    \ {\n        return clazz;\n    }\n}\n\n### Source File Dependency Files Content\n\
+    ### Dependency File: CapturingMatcher.java\n/*\n * Copyright (c) 2007 Mockito\
+    \ contributors\n * This program is made available under the terms of the MIT License.\n\
+    \ */\npackage org.mockito.internal.matchers;\n\nimport static org.mockito.internal.exceptions.Reporter.noArgumentValueWasCaptured;\n\
+    \nimport java.io.Serializable;\nimport java.util.ArrayList;\nimport java.util.List;\n\
+    import java.util.Objects;\nimport java.util.concurrent.locks.Lock;\nimport java.util.concurrent.locks.ReadWriteLock;\n\
+    import java.util.concurrent.locks.ReentrantReadWriteLock;\n\nimport org.mockito.ArgumentMatcher;\n\
+    import org.mockito.internal.util.Primitives;\n\npublic class CapturingMatcher<T>\
+    \ implements ArgumentMatcher<T>, CapturesArguments, Serializable {\n\n    private\
+    \ final Class<? extends T> clazz;\n    private final List<T> arguments = new ArrayList<>();\n\
+    \n    private final ReadWriteLock lock = new ReentrantReadWriteLock();\n    private\
+    \ final Lock readLock = lock.readLock();\n    private final Lock writeLock = lock.writeLock();\n\
+    \n    public CapturingMatcher(final Class<? extends T> clazz) {\n        this.clazz\
+    \ = Objects.requireNonNull(clazz);\n    }\n\n    @Override\n    public boolean\
+    \ matches(Object argument) {\n        if (argument == null) {\n            return\
+    \ true;\n        }\n\n        if (Primitives.isPrimitiveOrWrapper(clazz)) {\n\
+    \            return Primitives.isAssignableFromWrapper(clazz, argument.getClass());\n\
+    \        }\n\n        return clazz.isAssignableFrom(argument.getClass());\n  \
+    \  }\n\n    @Override\n    public String toString() {\n        return \"<Capturing\
+    \ argument: \" + clazz.getSimpleName() + \">\";\n    }\n\n    public T getLastValue()\
+    \ {\n        readLock.lock();\n        try {\n            if (arguments.isEmpty())\
+    \ {\n                throw noArgumentValueWasCaptured();\n            }\n\n  \
+    \          return arguments.get(arguments.size() - 1);\n        } finally {\n\
+    \            readLock.unlock();\n        }\n    }\n\n    public List<T> getAllValues()\
+    \ {\n        readLock.lock();\n        try {\n            return new ArrayList<>(arguments);\n\
+    \        } finally {\n            readLock.unlock();\n        }\n    }\n\n   \
+    \ @SuppressWarnings(\"unchecked\")\n    @Override\n    public void captureFrom(Object\
+    \ argument) {\n        writeLock.lock();\n        try {\n            this.arguments.add((T)\
+    \ argument);\n        } finally {\n            writeLock.unlock();\n        }\n\
+    \    }\n\n    @Override\n    public Class<?> type() {\n        return clazz;\n\
+    \    }\n}\n\n\n### Dependency File: Primitives.java\n/*\n * Copyright (c) 2007\
+    \ Mockito contributors\n * This program is made available under the terms of the\
+    \ MIT License.\n */\npackage org.mockito.internal.util;\n\nimport java.util.HashMap;\n\
+    import java.util.Map;\n\n@SuppressWarnings(\"unchecked\")\npublic final class\
+    \ Primitives {\n\n    private static final Map<Class<?>, Class<?>> PRIMITIVE_TYPES\
+    \ = new HashMap<>();\n    private static final Map<Class<?>, Object> PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES\
+    \ =\n            new HashMap<>();\n\n    /**\n     * Returns the primitive type\
+    \ of the given class.\n     * <p/>\n     * The passed class can be any class :\
+    \ <code>boolean.class</code>, <code>Integer.class</code>\n     * in witch case\
+    \ this method will return <code>boolean.class</code>, even <code>SomeObject.class</code>\n\
+    \     * in which case <code>null</code> will be returned.\n     *\n     * @param\
+    \ clazz The class from which primitive type has to be retrieved\n     * @param\
+    \ <T>   The type\n     * @return The primitive type if relevant, otherwise <code>null</code>\n\
+    \     */\n    public static <T> Class<T> primitiveTypeOf(Class<T> clazz) {\n \
+    \       if (clazz.isPrimitive()) {\n            return clazz;\n        }\n   \
+    \     return (Class<T>) PRIMITIVE_TYPES.get(clazz);\n    }\n\n    /**\n     *\
+    \ Indicates if the given class is primitive type or a primitive wrapper.\n   \
+    \  *\n     * @param type The type to check\n     * @return <code>true</code> if\
+    \ primitive or wrapper, <code>false</code> otherwise.\n     */\n    public static\
+    \ boolean isPrimitiveOrWrapper(Class<?> type) {\n        return PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.containsKey(type);\n\
+    \    }\n\n    public static boolean isAssignableFromWrapper(Class<?> valueClass,\
+    \ Class<?> referenceType) {\n        if (isPrimitiveOrWrapper(valueClass) && isPrimitiveOrWrapper(referenceType))\
+    \ {\n            return Primitives.primitiveTypeOf(valueClass)\n             \
+    \       .isAssignableFrom(Primitives.primitiveTypeOf(referenceType));\n      \
+    \  }\n        return false;\n    }\n\n    /**\n     * Returns the boxed default\
+    \ value for a primitive or a primitive wrapper.\n     *\n     * @param primitiveOrWrapperType\
+    \ The type to lookup the default value\n     * @return The boxed default values\
+    \ as defined in Java Language Specification,\n     *         <code>null</code>\
+    \ if the type is neither a primitive nor a wrapper\n     */\n    public static\
+    \ <T> T defaultValue(Class<T> primitiveOrWrapperType) {\n        return (T) PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.get(primitiveOrWrapperType);\n\
+    \    }\n\n    static {\n        PRIMITIVE_TYPES.put(Boolean.class, Boolean.TYPE);\n\
+    \        PRIMITIVE_TYPES.put(Character.class, Character.TYPE);\n        PRIMITIVE_TYPES.put(Byte.class,\
+    \ Byte.TYPE);\n        PRIMITIVE_TYPES.put(Short.class, Short.TYPE);\n       \
+    \ PRIMITIVE_TYPES.put(Integer.class, Integer.TYPE);\n        PRIMITIVE_TYPES.put(Long.class,\
+    \ Long.TYPE);\n        PRIMITIVE_TYPES.put(Float.class, Float.TYPE);\n       \
+    \ PRIMITIVE_TYPES.put(Double.class, Double.TYPE);\n    }\n\n    static {\n   \
+    \     PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Boolean.class, false);\n       \
+    \ PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Character.class, '\\u0000');\n     \
+    \   PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Byte.class, (byte) 0);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Short.class,\
+    \ (short) 0);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Integer.class,\
+    \ 0);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Long.class, 0L);\n    \
+    \    PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Float.class, 0F);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(Double.class,\
+    \ 0D);\n\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(boolean.class, false);\n\
+    \        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(char.class, '\\u0000');\n   \
+    \     PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(byte.class, (byte) 0);\n       \
+    \ PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(short.class, (short) 0);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(int.class,\
+    \ 0);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(long.class, 0L);\n    \
+    \    PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(float.class, 0F);\n        PRIMITIVE_OR_WRAPPER_DEFAULT_VALUES.put(double.class,\
+    \ 0D);\n    }\n\n    private Primitives() {}\n}\n\nOutput the complete test file,\
+    \ code only, no explanations.\n### Time\nCurrent time: 2025-04-11 03:25:15\n"
+  role: user

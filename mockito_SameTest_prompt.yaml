@@ -1,0 +1,182 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: mockito\nSource File Path: mockito-core/src/main/java/org/mockito/internal/matchers/Same.java\n\
+    Test File Path: mockito-core/src/test/java/org/mockito/internal/matchers/SameTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (c) 2007 Mockito contributors\n\
+    \ * This program is made available under the terms of the MIT License.\n */\n\
+    package org.mockito.internal.matchers;\n\nimport java.io.Serializable;\n\nimport\
+    \ org.mockito.ArgumentMatcher;\nimport org.mockito.internal.matchers.text.ValuePrinter;\n\
+    \npublic class Same implements ArgumentMatcher<Object>, Serializable {\n\n   \
+    \ private final Object wanted;\n\n    public Same(Object wanted) {\n        this.wanted\
+    \ = wanted;\n    }\n\n    @Override\n    public boolean matches(Object actual)\
+    \ {\n        return wanted == actual;\n    }\n\n    @Override\n    public Class<?>\
+    \ type() {\n        return wanted != null ? wanted.getClass() : ArgumentMatcher.super.type();\n\
+    \    }\n\n    @Override\n    public String toString() {\n        return \"same(\"\
+    \ + ValuePrinter.print(wanted) + \")\";\n    }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: ArgumentMatcher.java\n/*\n * Copyright (c)\
+    \ 2016 Mockito contributors\n * This program is made available under the terms\
+    \ of the MIT License.\n */\npackage org.mockito;\n\n/**\n * Allows creating customized\
+    \ argument matchers.\n * This API was changed in Mockito 2.1.0 in an effort to\
+    \ decouple Mockito from Hamcrest\n * and reduce the risk of version incompatibility.\n\
+    \ * Migration guide is included close to the bottom of this javadoc.\n * <p>\n\
+    \ * For non-trivial method arguments used in stubbing or verification, you have\
+    \ the following options\n * (in no particular order):\n * <ul>\n *     <li>refactor\
+    \ the code so that the interactions with collaborators are easier to test with\
+    \ mocks.\n *     Perhaps it is possible to pass a different argument to the method\
+    \ so that mocking is easier?\n *     If stuff is hard to test it usually indicates\
+    \ the design could be better, so do refactor for testability!\n *     </li>\n\
+    \ *     <li>don't match the argument strictly, just use one of the lenient argument\
+    \ matchers like\n *     {@link Mockito#notNull()}. Some times it is better to\
+    \ have a simple test that works than\n *     a complicated test that seem to work.\n\
+    \ *     </li>\n *     <li>implement equals() method in the objects that are used\
+    \ as arguments to mocks.\n *     Mockito naturally uses equals() for argument\
+    \ matching.\n *     Many times, this is option is clean and simple.\n *     </li>\n\
+    \ *     <li>use {@link ArgumentCaptor} to capture the arguments and perform assertions\
+    \ on their state.\n *     Useful when you need to verify the arguments. Captor\
+    \ is not useful if you need argument matching for stubbing.\n *     Many times,\
+    \ this option leads to clean and readable tests with fine-grained validation of\
+    \ arguments.\n *     </li>\n *     <li>use customized argument matchers by implementing\
+    \ {@link ArgumentMatcher} interface\n *     and passing the implementation to\
+    \ the {@link Mockito#argThat} method.\n *     This option is useful if custom\
+    \ matcher is needed for stubbing and can be reused a lot.\n *     Note that {@link\
+    \ Mockito#argThat} demonstrates <b>NullPointerException</b> auto-unboxing caveat.\n\
+    \ *     </li>\n *     <li>use an instance of hamcrest matcher and pass it to\n\
+    \ *     {@link org.mockito.hamcrest.MockitoHamcrest#argThat(org.hamcrest.Matcher)}\n\
+    \ *     Useful if you already have a hamcrest matcher. Reuse and win!\n *    \
+    \ Note that {@link org.mockito.hamcrest.MockitoHamcrest#argThat(org.hamcrest.Matcher)}\
+    \ demonstrates <b>NullPointerException</b> auto-unboxing caveat.\n *     </li>\n\
+    \ *     <li>Java 8 only - use a lambda in place of an {@link ArgumentMatcher}\
+    \ since {@link ArgumentMatcher}\n *     is effectively a functional interface.\
+    \ A lambda can be used with the {@link Mockito#argThat} method.</li>\n * </ul>\n\
+    \ *\n * <p>\n * Implementations of this interface can be used with {@link ArgumentMatchers#argThat}\
+    \ method.\n * Use <code>toString()</code> method for description of the matcher\n\
+    \ * - it is printed in verification errors.\n *\n * <pre class=\"code\"><code\
+    \ class=\"java\">\n * class ListOfTwoElements implements ArgumentMatcher&lt;List&gt;\
+    \ {\n *     public boolean matches(List list) {\n *         return list.size()\
+    \ == 2;\n *     }\n *     public String toString() {\n *         //printed in\
+    \ verification errors\n *         return \"[list of 2 elements]\";\n *     }\n\
+    \ * }\n *\n * List mock = mock(List.class);\n *\n * when(mock.addAll(argThat(new\
+    \ ListOfTwoElements()))).thenReturn(true);\n *\n * mock.addAll(Arrays.asList(&quot;one&quot;,\
+    \ &quot;two&quot;));\n *\n * verify(mock).addAll(argThat(new ListOfTwoElements()));\n\
+    \ * </code></pre>\n *\n * To keep it readable you can extract method, e.g:\n *\n\
+    \ * <pre class=\"code\"><code class=\"java\">\n *   verify(mock).addAll(<b>argThat(new\
+    \ ListOfTwoElements())</b>);\n *   //becomes\n *   verify(mock).addAll(<b>listOfTwoElements()</b>);\n\
+    \ * </code></pre>\n *\n * In Java 8 you can treat ArgumentMatcher as a functional\
+    \ interface\n * and use a lambda, e.g.:\n *\n * <pre class=\"code\"><code class=\"\
+    java\">\n *   verify(mock).addAll(<b>argThat(list -&gt; list.size() == 2)</b>);\n\
+    \ * </code></pre>\n *\n * <p>\n * Read more about other matchers in javadoc for\
+    \ {@link ArgumentMatchers} class.\n * <h2>2.1.0 migration guide</h2>\n *\n * All\
+    \ existing custom implementations of <code>ArgumentMatcher</code> will no longer\
+    \ compile.\n * All locations where hamcrest matchers are passed to <code>argThat()</code>\
+    \ will no longer compile.\n * There are 2 approaches to fix the problems:\n *\
+    \ <ul>\n * <li>a) Refactor the hamcrest matcher to Mockito matcher:\n * Use \"\
+    implements ArgumentMatcher\" instead of \"extends ArgumentMatcher\".\n * Then\
+    \ refactor <code>describeTo()</code> method into <code>toString()</code> method.\n\
+    \ * </li>\n * <li>\n * b) Use <code>org.mockito.hamcrest.MockitoHamcrest.argThat()</code>\
+    \ instead of <code>Mockito.argThat()</code>.\n * Ensure that there is <a href=\"\
+    http://hamcrest.org/JavaHamcrest/\">hamcrest</a> dependency on classpath\n * (Mockito\
+    \ does not depend on hamcrest any more).\n *\n * </li>\n * </ul>\n * What option\
+    \ is right for you? If you don't mind having a compile-time dependency for Hamcrest,\n\
+    \ * then the second option is probably right for you.\n * Your choice should not\
+    \ have a big impact and is fully reversible -\n * you can choose different option\
+    \ in future (and refactor the code)!\n *\n * @param <T> type of argument\n * @since\
+    \ 2.1.0\n */\n@FunctionalInterface\npublic interface ArgumentMatcher<T> {\n\n\
+    \    /**\n     * Informs if this matcher accepts the given argument.\n     * <p>\n\
+    \     * The method should <b>never</b> assert if the argument doesn't match. It\n\
+    \     * should only return false.\n     * <p>\n     * See the example in the top\
+    \ level javadoc for {@link ArgumentMatcher}\n     *\n     * @param argument\n\
+    \     *            the argument\n     * @return true if this matcher accepts the\
+    \ given argument.\n     */\n    boolean matches(T argument);\n\n    /**\n    \
+    \ * The type of the argument this matcher matches.\n     *\n     * <p>This method\
+    \ is used to differentiate between a matcher used to match a raw vararg array\
+    \ parameter\n     * from a matcher used to match a single value passed as a vararg\
+    \ parameter.\n     *\n     * <p>Where the matcher:\n     * <ul>\n     *     <li>is\
+    \ at the parameter index of a vararg parameter</li>\n     *     <li>is the last\
+    \ matcher passed</li>\n     *     <li>this method returns a type assignable to\
+    \ the vararg parameter's raw type, i.e. its array type.</li>\n     * </ul>\n \
+    \    *\n     * ...then the matcher is matched against the raw vararg parameter,\
+    \ rather than the first element of the raw parameter.\n     *\n     * <p>For example:\n\
+    \     *\n     * <pre class=\"code\"><code class=\"java\">\n     *  // Given vararg\
+    \ method with signature:\n     *  int someVarargMethod(String... args);\n    \
+    \ *\n     *  // The following will match invocations with any number of parameters,\
+    \ i.e. any number of elements in the raw array.\n     *  mock.someVarargMethod(isA(String[].class));\n\
+    \     *\n     *  // The following will match invocations with a single parameter,\
+    \ i.e. one string in the raw array.\n     *  mock.someVarargMethod(isA(String.class));\n\
+    \     *\n     *  // The following will match invocations with two parameters,\
+    \ i.e. two strings in the raw array\n     *  mock.someVarargMethod(isA(String.class),\
+    \ isA(String.class));\n     * </code></pre>\n     *\n     * <p>Only matcher implementations\
+    \ that can conceptually match a raw vararg parameter should override this method.\n\
+    \     *\n     * @return the type this matcher handles. The default value of {@link\
+    \ Void} means the type is not known.\n     * @since 4.11.0\n     */\n    default\
+    \ Class<?> type() {\n        return Void.class;\n    }\n}\n\n\n### Dependency\
+    \ File: ValuePrinter.java\n/*\n * Copyright (c) 2016 Mockito contributors\n *\
+    \ This program is made available under the terms of the MIT License.\n */\npackage\
+    \ org.mockito.internal.matchers.text;\n\nimport java.lang.reflect.Array;\nimport\
+    \ java.util.Iterator;\nimport java.util.Map;\n\n/**\n * Prints a Java object value\
+    \ in a way humans can read it neatly.\n * Inspired on hamcrest. Used for printing\
+    \ arguments in verification errors.\n */\npublic class ValuePrinter {\n\n    private\
+    \ ValuePrinter() {}\n\n    /**\n     * Prints given value so that it is neatly\
+    \ readable by humans.\n     * Handles explosive toString() implementations.\n\
+    \     */\n    public static String print(final Object value) {\n        if (value\
+    \ == null) {\n            return \"null\";\n        }\n        if (value instanceof\
+    \ String) {\n            return '\"' + value.toString() + '\"';\n        }\n \
+    \       if (value instanceof Character) {\n            return printChar((Character)\
+    \ value);\n        }\n        if (value instanceof Long) {\n            return\
+    \ value + \"L\";\n        }\n        if (value instanceof Double) {\n        \
+    \    return value + \"d\";\n        }\n        if (value instanceof Float) {\n\
+    \            return value + \"f\";\n        }\n        if (value instanceof Short)\
+    \ {\n            return \"(short) \" + value;\n        }\n        if (value instanceof\
+    \ Byte) {\n            return String.format(\"(byte) 0x%02X\", (Byte) value);\n\
+    \        }\n        if (value instanceof Map) {\n            return printMap((Map<?,\
+    \ ?>) value);\n        }\n        if (value.getClass().isArray()) {\n        \
+    \    return printValues(\n                    \"[\",\n                    \",\
+    \ \",\n                    \"]\",\n                    new Iterator<Object>()\
+    \ {\n                        private int currentIndex = 0;\n\n               \
+    \         @Override\n                        public boolean hasNext() {\n    \
+    \                        return currentIndex < Array.getLength(value);\n     \
+    \                   }\n\n                        public Object next() {\n    \
+    \                        return Array.get(value, currentIndex++);\n          \
+    \              }\n\n                        public void remove() {\n         \
+    \                   throw new UnsupportedOperationException(\n               \
+    \                     \"cannot remove items from an array\");\n              \
+    \          }\n                    });\n        }\n        if (value instanceof\
+    \ FormattedText) {\n            return (((FormattedText) value).getText());\n\
+    \        }\n\n        return descriptionOf(value);\n    }\n\n    private static\
+    \ String printMap(Map<?, ?> map) {\n        StringBuilder result = new StringBuilder();\n\
+    \        Iterator<? extends Map.Entry<?, ?>> iterator = map.entrySet().iterator();\n\
+    \        while (iterator.hasNext()) {\n            Map.Entry<?, ?> entry = iterator.next();\n\
+    \            result.append(print(entry.getKey())).append(\" = \").append(print(entry.getValue()));\n\
+    \            if (iterator.hasNext()) {\n                result.append(\", \");\n\
+    \            }\n        }\n        return \"{\" + result + \"}\";\n    }\n\n \
+    \   /**\n     * Print values in a nice format, e.g. (1, 2, 3)\n     *\n     *\
+    \ @param start the beginning of the values, e.g. \"(\"\n     * @param separator\
+    \ the separator of values, e.g. \", \"\n     * @param end the end of the values,\
+    \ e.g. \")\"\n     * @param values the values to print\n     *\n     * @return\
+    \ neatly formatted value list\n     */\n    public static String printValues(\n\
+    \            String start, String separator, String end, Iterator<?> values) {\n\
+    \        if (start == null) {\n            start = \"(\";\n        }\n       \
+    \ if (separator == null) {\n            separator = \",\";\n        }\n      \
+    \  if (end == null) {\n            end = \")\";\n        }\n\n        StringBuilder\
+    \ sb = new StringBuilder(start);\n        while (values.hasNext()) {\n       \
+    \     sb.append(print(values.next()));\n            if (values.hasNext()) {\n\
+    \                sb.append(separator);\n            }\n        }\n        return\
+    \ sb.append(end).toString();\n    }\n\n    private static String printChar(char\
+    \ value) {\n        StringBuilder sb = new StringBuilder();\n        sb.append('\\\
+    '');\n        switch (value) {\n            case '\"':\n                sb.append(\"\
+    \\\\\\\"\");\n                break;\n            case '\\n':\n              \
+    \  sb.append(\"\\\\n\");\n                break;\n            case '\\r':\n  \
+    \              sb.append(\"\\\\r\");\n                break;\n            case\
+    \ '\\t':\n                sb.append(\"\\\\t\");\n                break;\n    \
+    \        default:\n                sb.append(value);\n        }\n        sb.append('\\\
+    '');\n        return sb.toString();\n    }\n\n    private static String descriptionOf(Object\
+    \ value) {\n        try {\n            return String.valueOf(value);\n       \
+    \ } catch (RuntimeException e) {\n            return value.getClass().getName()\
+    \ + \"@\" + Integer.toHexString(value.hashCode());\n        }\n    }\n}\n\nOutput\
+    \ the complete test file, code only, no explanations.\n### Time\nCurrent time:\
+    \ 2025-04-11 03:26:13\n"
+  role: user

@@ -1,0 +1,71 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/CharsRefBuilder.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestCharsRefBuilder.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\n/**\n * A builder\
+    \ for {@link CharsRef} instances.\n *\n * @lucene.internal\n */\npublic class\
+    \ CharsRefBuilder implements Appendable {\n\n  private static final String NULL_STRING\
+    \ = \"null\";\n\n  private final CharsRef ref;\n\n  /** Sole constructor. */\n\
+    \  public CharsRefBuilder() {\n    ref = new CharsRef();\n  }\n\n  /** Return\
+    \ a reference to the chars of this builder. */\n  public char[] chars() {\n  \
+    \  return ref.chars;\n  }\n\n  /** Return the number of chars in this buffer.\
+    \ */\n  public int length() {\n    return ref.length;\n  }\n\n  /** Set the length.\
+    \ */\n  public void setLength(int length) {\n    this.ref.length = length;\n \
+    \ }\n\n  /** Return the char at the given offset. */\n  public char charAt(int\
+    \ offset) {\n    return ref.chars[offset];\n  }\n\n  /** Set a char. */\n  public\
+    \ void setCharAt(int offset, char b) {\n    ref.chars[offset] = b;\n  }\n\n  /**\
+    \ Reset this builder to the empty state. */\n  public void clear() {\n    ref.length\
+    \ = 0;\n  }\n\n  @Override\n  public CharsRefBuilder append(CharSequence csq)\
+    \ {\n    if (csq == null) {\n      return append(NULL_STRING);\n    }\n    return\
+    \ append(csq, 0, csq.length());\n  }\n\n  @Override\n  public CharsRefBuilder\
+    \ append(CharSequence csq, int start, int end) {\n    if (csq == null) {\n   \
+    \   return append(NULL_STRING);\n    }\n    grow(ref.length + end - start);\n\
+    \    for (int i = start; i < end; ++i) {\n      setCharAt(ref.length++, csq.charAt(i));\n\
+    \    }\n    return this;\n  }\n\n  @Override\n  public CharsRefBuilder append(char\
+    \ c) {\n    grow(ref.length + 1);\n    setCharAt(ref.length++, c);\n    return\
+    \ this;\n  }\n\n  /** Copies the given {@link CharsRef} referenced content into\
+    \ this instance. */\n  public void copyChars(CharsRef other) {\n    copyChars(other.chars,\
+    \ other.offset, other.length);\n  }\n\n  /** Used to grow the reference array.\
+    \ */\n  public void grow(int newLength) {\n    ref.chars = ArrayUtil.grow(ref.chars,\
+    \ newLength);\n  }\n\n  /** Copy the provided bytes, interpreted as UTF-8 bytes.\
+    \ */\n  public void copyUTF8Bytes(byte[] bytes, int offset, int length) {\n  \
+    \  grow(length);\n    ref.length = UnicodeUtil.UTF8toUTF16(bytes, offset, length,\
+    \ ref.chars);\n  }\n\n  /** Copy the provided bytes, interpreted as UTF-8 bytes.\
+    \ */\n  public void copyUTF8Bytes(BytesRef bytes) {\n    copyUTF8Bytes(bytes.bytes,\
+    \ bytes.offset, bytes.length);\n  }\n\n  /** Copies the given array into this\
+    \ instance. */\n  public void copyChars(char[] otherChars, int otherOffset, int\
+    \ otherLength) {\n    grow(otherLength);\n    System.arraycopy(otherChars, otherOffset,\
+    \ ref.chars, 0, otherLength);\n    ref.length = otherLength;\n  }\n\n  /** Appends\
+    \ the given array to this CharsRef */\n  public void append(char[] otherChars,\
+    \ int otherOffset, int otherLength) {\n    int newLen = ref.length + otherLength;\n\
+    \    grow(newLen);\n    System.arraycopy(otherChars, otherOffset, ref.chars, ref.length,\
+    \ otherLength);\n    ref.length = newLen;\n  }\n\n  /**\n   * Return a {@link\
+    \ CharsRef} that points to the internal content of this builder. Any update to\n\
+    \   * the content of this builder might invalidate the provided <code>ref</code>\
+    \ and vice-versa.\n   */\n  public CharsRef get() {\n    assert ref.offset ==\
+    \ 0 : \"Modifying the offset of the returned ref is illegal\";\n    return ref;\n\
+    \  }\n\n  /** Build a new {@link CharsRef} that has the same content as this builder.\
+    \ */\n  public CharsRef toCharsRef() {\n    return new CharsRef(ArrayUtil.copyOfSubArray(ref.chars,\
+    \ 0, ref.length), 0, ref.length);\n  }\n\n  @Override\n  public String toString()\
+    \ {\n    return get().toString();\n  }\n\n  @Override\n  public boolean equals(Object\
+    \ obj) {\n    throw new UnsupportedOperationException();\n  }\n\n  @Override\n\
+    \  public int hashCode() {\n    throw new UnsupportedOperationException();\n \
+    \ }\n}\n\n### Source File Dependency Files Content\n### Dependency File: empty.txt\n\
+    \nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 03:42:49\n"
+  role: user

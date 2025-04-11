@@ -1,0 +1,71 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/CloseableThreadLocal.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestCloseableThreadLocal.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.io.Closeable;\n\
+    import java.lang.ref.WeakReference;\nimport java.util.Iterator;\nimport java.util.Map;\n\
+    import java.util.WeakHashMap;\nimport java.util.concurrent.atomic.AtomicInteger;\n\
+    \n/**\n * Java's builtin ThreadLocal has a serious flaw: it can take an arbitrarily\
+    \ long amount of time to\n * dereference the things you had stored in it, even\
+    \ once the ThreadLocal instance itself is no\n * longer referenced. This is because\
+    \ there is single, master map stored for each thread, which all\n * ThreadLocals\
+    \ share, and that master map only periodically purges \"stale\" entries.\n *\n\
+    \ * <p>While not technically a memory leak, because eventually the memory will\
+    \ be reclaimed, it can\n * take a long time and you can easily hit OutOfMemoryError\
+    \ because from the GC's standpoint the\n * stale entries are not reclaimable.\n\
+    \ *\n * <p>This class works around that, by only enrolling WeakReference values\
+    \ into the ThreadLocal, and\n * separately holding a hard reference to each stored\
+    \ value. When you call {@link #close}, these\n * hard references are cleared and\
+    \ then GC is freely able to reclaim space by objects stored in it.\n *\n * <p>We\
+    \ can not rely on {@link ThreadLocal#remove()} as it only removes the value for\
+    \ the caller\n * thread, whereas {@link #close} takes care of all threads. You\
+    \ should not call {@link #close}\n * until all threads are done using the instance.\n\
+    \ *\n * @lucene.internal\n */\npublic class CloseableThreadLocal<T> implements\
+    \ Closeable {\n\n  private ThreadLocal<WeakReference<T>> t = new ThreadLocal<>();\n\
+    \n  // Use a WeakHashMap so that if a Thread exits and is\n  // GC'able, its entry\
+    \ may be removed:\n  private Map<Thread, T> hardRefs = new WeakHashMap<>();\n\n\
+    \  // Increase this to decrease frequency of purging in get:\n  private static\
+    \ final int PURGE_MULTIPLIER = 20;\n\n  // On each get or set we decrement this;\
+    \ when it hits 0 we\n  // purge.  After purge, we set this to\n  // PURGE_MULTIPLIER\
+    \ * stillAliveCount.  This keeps\n  // amortized cost of purging linear.\n  private\
+    \ final AtomicInteger countUntilPurge = new AtomicInteger(PURGE_MULTIPLIER);\n\
+    \n  protected T initialValue() {\n    return null;\n  }\n\n  public T get() {\n\
+    \    WeakReference<T> weakRef = t.get();\n    if (weakRef == null) {\n      T\
+    \ iv = initialValue();\n      if (iv != null) {\n        set(iv);\n        return\
+    \ iv;\n      } else {\n        return null;\n      }\n    } else {\n      maybePurge();\n\
+    \      return weakRef.get();\n    }\n  }\n\n  public void set(T object) {\n\n\
+    \    t.set(new WeakReference<>(object));\n\n    synchronized (hardRefs) {\n  \
+    \    hardRefs.put(Thread.currentThread(), object);\n      maybePurge();\n    }\n\
+    \  }\n\n  private void maybePurge() {\n    if (countUntilPurge.getAndDecrement()\
+    \ == 0) {\n      purge();\n    }\n  }\n\n  // Purge dead threads\n  private void\
+    \ purge() {\n    synchronized (hardRefs) {\n      int stillAliveCount = 0;\n \
+    \     for (Iterator<Thread> it = hardRefs.keySet().iterator(); it.hasNext(); )\
+    \ {\n        final Thread t = it.next();\n        if (!t.isAlive()) {\n      \
+    \    it.remove();\n        } else {\n          stillAliveCount++;\n        }\n\
+    \      }\n      int nextCount = (1 + stillAliveCount) * PURGE_MULTIPLIER;\n  \
+    \    if (nextCount <= 0) {\n        // defensive: int overflow!\n        nextCount\
+    \ = 1000000;\n      }\n\n      countUntilPurge.set(nextCount);\n    }\n  }\n\n\
+    \  @Override\n  public void close() {\n    // Clear the hard refs; then, the only\
+    \ remaining refs to\n    // all values we were storing are weak (unless somewhere\n\
+    \    // else is still using them) and so GC may reclaim them:\n    hardRefs =\
+    \ null;\n    // Take care of the current thread right now; others will be\n  \
+    \  // taken care of via the WeakReferences.\n    if (t != null) {\n      t.remove();\n\
+    \    }\n    t = null;\n  }\n}\n\n### Source File Dependency Files Content\n###\
+    \ Dependency File: empty.txt\n\nOutput the complete test file, code only, no explanations.\n\
+    ### Time\nCurrent time: 2025-04-11 03:43:04\n"
+  role: user

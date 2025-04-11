@@ -1,0 +1,30 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: mockito\nSource File Path: mockito-core/src/main/java/org/mockito/internal/matchers/Equality.java\n\
+    Test File Path: mockito-core/src/test/java/org/mockito/internal/matchers/EqualityTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (c) 2007 Mockito contributors\n\
+    \ * This program is made available under the terms of the MIT License.\n */\n\
+    package org.mockito.internal.matchers;\n\nimport java.lang.reflect.Array;\n\n\
+    // stolen from hamcrest because I didn't want to have more dependency than Matcher\
+    \ class\npublic final class Equality {\n\n    public static boolean areEqual(Object\
+    \ o1, Object o2) {\n        if (o1 == o2) {\n            return true;\n      \
+    \  } else if (o1 == null || o2 == null) {\n            return false;\n       \
+    \ } else if (isArray(o1)) {\n            return isArray(o2) && areArraysEqual(o1,\
+    \ o2);\n        } else {\n            return o1.equals(o2);\n        }\n    }\n\
+    \n    static boolean areArraysEqual(Object o1, Object o2) {\n        return areArrayLengthsEqual(o1,\
+    \ o2) && areArrayElementsEqual(o1, o2);\n    }\n\n    static boolean areArrayLengthsEqual(Object\
+    \ o1, Object o2) {\n        return Array.getLength(o1) == Array.getLength(o2);\n\
+    \    }\n\n    static boolean areArrayElementsEqual(Object o1, Object o2) {\n \
+    \       for (int i = 0; i < Array.getLength(o1); i++) {\n            if (!areEqual(Array.get(o1,\
+    \ i), Array.get(o2, i))) {\n                return false;\n            }\n   \
+    \     }\n        return true;\n    }\n\n    static boolean isArray(Object o) {\n\
+    \        return o.getClass().isArray();\n    }\n\n    private Equality() {}\n\
+    }\n\n### Source File Dependency Files Content\n### Dependency File: empty.txt\n\
+    \nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 03:25:31\n"
+  role: user

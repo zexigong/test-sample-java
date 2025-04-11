@@ -1,0 +1,348 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/AttributeSource.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestAttributeSource.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.util.Collections;\n\
+    import java.util.Iterator;\nimport java.util.LinkedHashMap;\nimport java.util.LinkedHashSet;\n\
+    import java.util.Map;\nimport java.util.Map.Entry;\nimport java.util.NoSuchElementException;\n\
+    import java.util.Objects;\nimport java.util.Set;\nimport org.apache.lucene.analysis.TokenStream;\
+    \ // for javadocs\n\n/**\n * An AttributeSource contains a list of different {@link\
+    \ AttributeImpl}s, and methods to add and\n * get them. There can only be a single\
+    \ instance of an attribute in the same AttributeSource\n * instance. This is ensured\
+    \ by passing in the actual type of the Attribute (Class&lt;Attribute&gt;)\n *\
+    \ to the {@link #addAttribute(Class)}, which then checks if an instance of that\
+    \ type is already\n * present. If yes, it returns the instance, otherwise it creates\
+    \ a new instance and returns it.\n */\npublic class AttributeSource {\n\n  /**\n\
+    \   * This class holds the state of an AttributeSource.\n   *\n   * @see #captureState\n\
+    \   * @see #restoreState\n   */\n  public static final class State implements\
+    \ Cloneable {\n    AttributeImpl attribute;\n    State next;\n\n    @Override\n\
+    \    public State clone() {\n      State clone = new State();\n      clone.attribute\
+    \ = attribute.clone();\n\n      if (next != null) {\n        clone.next = next.clone();\n\
+    \      }\n\n      return clone;\n    }\n  }\n\n  // These two maps must always\
+    \ be in sync!!!\n  // So they are private, final and read-only from the outside\
+    \ (read-only iterators)\n  private final Map<Class<? extends Attribute>, AttributeImpl>\
+    \ attributes;\n  private final Map<Class<? extends AttributeImpl>, AttributeImpl>\
+    \ attributeImpls;\n  private final State[] currentState;\n\n  private final AttributeFactory\
+    \ factory;\n\n  /**\n   * An AttributeSource using the default attribute factory\
+    \ {@link\n   * AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.\n   */\n  public AttributeSource()\
+    \ {\n    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);\n  }\n\n  /** An AttributeSource\
+    \ that uses the same attributes as the supplied one. */\n  public AttributeSource(AttributeSource\
+    \ input) {\n    Objects.requireNonNull(input, \"input AttributeSource must not\
+    \ be null\");\n    this.attributes = input.attributes;\n    this.attributeImpls\
+    \ = input.attributeImpls;\n    this.currentState = input.currentState;\n    this.factory\
+    \ = input.factory;\n  }\n\n  /**\n   * An AttributeSource using the supplied {@link\
+    \ AttributeFactory} for creating new {@link\n   * Attribute} instances.\n   */\n\
+    \  public AttributeSource(AttributeFactory factory) {\n    this.attributes = new\
+    \ LinkedHashMap<>();\n    this.attributeImpls = new LinkedHashMap<>();\n    this.currentState\
+    \ = new State[1];\n    this.factory = Objects.requireNonNull(factory, \"AttributeFactory\
+    \ must not be null\");\n  }\n\n  /** returns the used AttributeFactory. */\n \
+    \ public final AttributeFactory getAttributeFactory() {\n    return this.factory;\n\
+    \  }\n\n  /**\n   * Returns a new iterator that iterates the attribute classes\
+    \ in the same order they were added\n   * in.\n   */\n  public final Iterator<Class<?\
+    \ extends Attribute>> getAttributeClassesIterator() {\n    return Collections.unmodifiableSet(attributes.keySet()).iterator();\n\
+    \  }\n\n  /**\n   * Returns a new iterator that iterates all unique Attribute\
+    \ implementations. This iterator may\n   * contain less entries that {@link #getAttributeClassesIterator},\
+    \ if one instance implements more\n   * than one Attribute interface.\n   */\n\
+    \  public final Iterator<AttributeImpl> getAttributeImplsIterator() {\n    final\
+    \ State initState = getCurrentState();\n    if (initState != null) {\n      return\
+    \ new Iterator<AttributeImpl>() {\n        private State state = initState;\n\n\
+    \        @Override\n        public void remove() {\n          throw new UnsupportedOperationException();\n\
+    \        }\n\n        @Override\n        public AttributeImpl next() {\n     \
+    \     if (state == null) throw new NoSuchElementException();\n          final\
+    \ AttributeImpl att = state.attribute;\n          state = state.next;\n      \
+    \    return att;\n        }\n\n        @Override\n        public boolean hasNext()\
+    \ {\n          return state != null;\n        }\n      };\n    } else {\n    \
+    \  return Collections.<AttributeImpl>emptySet().iterator();\n    }\n  }\n\n  /**\n\
+    \   * a cache that stores all interfaces for known implementation classes for\
+    \ performance (slow\n   * reflection)\n   */\n  private static final ClassValue<Class<?\
+    \ extends Attribute>[]> implInterfaces =\n      new ClassValue<Class<? extends\
+    \ Attribute>[]>() {\n        @Override\n        protected Class<? extends Attribute>[]\
+    \ computeValue(Class<?> clazz) {\n          final Set<Class<? extends Attribute>>\
+    \ intfSet = new LinkedHashSet<>();\n          // find all interfaces that this\
+    \ attribute instance implements\n          // and that extend the Attribute interface\n\
+    \          do {\n            for (Class<?> curInterface : clazz.getInterfaces())\
+    \ {\n              if (curInterface != Attribute.class\n                  && Attribute.class.isAssignableFrom(curInterface))\
+    \ {\n                intfSet.add(curInterface.asSubclass(Attribute.class));\n\
+    \              }\n            }\n            clazz = clazz.getSuperclass();\n\
+    \          } while (clazz != null);\n          @SuppressWarnings({\"unchecked\"\
+    , \"rawtypes\"})\n          final Class<? extends Attribute>[] a = intfSet.toArray(new\
+    \ Class[intfSet.size()]);\n          return a;\n        }\n      };\n\n  static\
+    \ Class<? extends Attribute>[] getAttributeInterfaces(\n      final Class<? extends\
+    \ AttributeImpl> clazz) {\n    return implInterfaces.get(clazz);\n  }\n\n  /**\n\
+    \   * <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute\
+    \ interfaces.\n   *\n   * <p><b>NOTE:</b> It is not guaranteed, that <code>att</code>\
+    \ is added to the <code>\n   * AttributeSource</code>, because the provided attributes\
+    \ may already exist. You should always\n   * retrieve the wanted attributes using\
+    \ {@link #getAttribute} after adding with this method and\n   * cast to your class.\
+    \ The recommended way to use custom implementations is using an {@link\n   * AttributeFactory}.\n\
+    \   *\n   * <p>This method will only add the Attribute interfaces directly implemented\
+    \ by the class and its\n   * super classes.\n   */\n  public final void addAttributeImpl(final\
+    \ AttributeImpl att) {\n    final Class<? extends AttributeImpl> clazz = att.getClass();\n\
+    \    if (attributeImpls.containsKey(clazz)) return;\n\n    // add all interfaces\
+    \ of this AttributeImpl to the maps\n    for (final Class<? extends Attribute>\
+    \ curInterface : getAttributeInterfaces(clazz)) {\n      // Attribute is a superclass\
+    \ of this interface\n      if (!attributes.containsKey(curInterface)) {\n    \
+    \    // invalidate state to force recomputation in captureState()\n        this.currentState[0]\
+    \ = null;\n        attributes.put(curInterface, att);\n        attributeImpls.put(clazz,\
+    \ att);\n      }\n    }\n  }\n\n  /**\n   * The caller must pass in a Class&lt;?\
+    \ extends Attribute&gt; value. This method first checks if\n   * an instance of\
+    \ that class is already in this AttributeSource and returns it. Otherwise a new\n\
+    \   * instance is created, added to this AttributeSource and returned.\n   */\n\
+    \  public final <T extends Attribute> T addAttribute(Class<T> attClass) {\n  \
+    \  AttributeImpl attImpl = attributes.get(attClass);\n    if (attImpl == null)\
+    \ {\n      if (!(attClass.isInterface() && Attribute.class.isAssignableFrom(attClass)))\
+    \ {\n        throw new IllegalArgumentException(\n            \"addAttribute()\
+    \ only accepts an interface that extends Attribute, but \"\n                +\
+    \ attClass.getName()\n                + \" does not fulfil this contract.\");\n\
+    \      }\n      addAttributeImpl(attImpl = this.factory.createAttributeInstance(attClass));\n\
+    \    }\n    return attClass.cast(attImpl);\n  }\n\n  /** Returns true, iff this\
+    \ AttributeSource has any attributes */\n  public final boolean hasAttributes()\
+    \ {\n    return !this.attributes.isEmpty();\n  }\n\n  /**\n   * The caller must\
+    \ pass in a Class&lt;? extends Attribute&gt; value. Returns true, iff this\n \
+    \  * AttributeSource contains the passed-in Attribute.\n   */\n  public final\
+    \ boolean hasAttribute(Class<? extends Attribute> attClass) {\n    return this.attributes.containsKey(attClass);\n\
+    \  }\n\n  /**\n   * Returns the instance of the passed in Attribute contained\
+    \ in this AttributeSource\n   *\n   * <p>The caller must pass in a Class&lt;?\
+    \ extends Attribute&gt; value.\n   *\n   * @return instance of the passed in Attribute,\
+    \ or {@code null} if this AttributeSource does not\n   *     contain the Attribute.\
+    \ It is recommended to always use {@link #addAttribute} even in\n   *     consumers\
+    \ of TokenStreams, because you cannot know if a specific TokenStream really uses\
+    \ a\n   *     specific Attribute. {@link #addAttribute} will automatically make\
+    \ the attribute available.\n   *     If you want to only use the attribute, if\
+    \ it is available (to optimize consuming), use\n   *     {@link #hasAttribute}.\n\
+    \   */\n  public final <T extends Attribute> T getAttribute(Class<T> attClass)\
+    \ {\n    return attClass.cast(attributes.get(attClass));\n  }\n\n  private State\
+    \ getCurrentState() {\n    State s = currentState[0];\n    if (s != null || !hasAttributes())\
+    \ {\n      return s;\n    }\n    State c = s = currentState[0] = new State();\n\
+    \    final Iterator<AttributeImpl> it = attributeImpls.values().iterator();\n\
+    \    c.attribute = it.next();\n    while (it.hasNext()) {\n      c.next = new\
+    \ State();\n      c = c.next;\n      c.attribute = it.next();\n    }\n    return\
+    \ s;\n  }\n\n  /**\n   * Resets all Attributes in this AttributeSource by calling\
+    \ {@link AttributeImpl#clear()} on each\n   * Attribute implementation.\n   */\n\
+    \  public final void clearAttributes() {\n    for (State state = getCurrentState();\
+    \ state != null; state = state.next) {\n      state.attribute.clear();\n    }\n\
+    \  }\n\n  /**\n   * Resets all Attributes in this AttributeSource by calling {@link\
+    \ AttributeImpl#end()} on each\n   * Attribute implementation.\n   */\n  public\
+    \ final void endAttributes() {\n    for (State state = getCurrentState(); state\
+    \ != null; state = state.next) {\n      state.attribute.end();\n    }\n  }\n\n\
+    \  /** Removes all attributes and their implementations from this AttributeSource.\
+    \ */\n  public final void removeAllAttributes() {\n    attributes.clear();\n \
+    \   attributeImpls.clear();\n  }\n\n  /**\n   * Captures the state of all Attributes.\
+    \ The return value can be passed to {@link #restoreState}\n   * to restore the\
+    \ state of this or another AttributeSource.\n   *\n   * <p>Be careful, this method\
+    \ comes with a cost of deep copying all attributes in the source.\n   */\n  public\
+    \ final State captureState() {\n    final State state = this.getCurrentState();\n\
+    \    return (state == null) ? null : state.clone();\n  }\n\n  /**\n   * Restores\
+    \ this state by copying the values of all attribute implementations that this\
+    \ state\n   * contains into the attributes implementations of the targetStream.\
+    \ The targetStream must contain\n   * a corresponding instance for each argument\
+    \ contained in this state (e.g. it is not possible to\n   * restore the state\
+    \ of an AttributeSource containing a TermAttribute into a AttributeSource using\n\
+    \   * a Token instance as implementation).\n   *\n   * <p>Note that this method\
+    \ does not affect attributes of the targetStream that are not contained\n   *\
+    \ in this state. In other words, if for example the targetStream contains an OffsetAttribute,\
+    \ but\n   * this state doesn't, then the value of the OffsetAttribute remains\
+    \ unchanged. It might be\n   * desirable to reset its value to the default, in\
+    \ which case the caller should first call {@link\n   * TokenStream#clearAttributes()}\
+    \ on the targetStream.\n   */\n  public final void restoreState(State state) {\n\
+    \    if (state == null) return;\n\n    do {\n      AttributeImpl targetImpl =\
+    \ attributeImpls.get(state.attribute.getClass());\n      if (targetImpl == null)\
+    \ {\n        throw new IllegalArgumentException(\n            \"State contains\
+    \ AttributeImpl of type \"\n                + state.attribute.getClass().getName()\n\
+    \                + \" that is not in in this AttributeSource\");\n      }\n  \
+    \    state.attribute.copyTo(targetImpl);\n      state = state.next;\n    } while\
+    \ (state != null);\n  }\n\n  @Override\n  public int hashCode() {\n    int code\
+    \ = 0;\n    for (State state = getCurrentState(); state != null; state = state.next)\
+    \ {\n      code = code * 31 + state.attribute.hashCode();\n    }\n    return code;\n\
+    \  }\n\n  @Override\n  public boolean equals(Object obj) {\n    if (obj == this)\
+    \ {\n      return true;\n    }\n\n    if (obj instanceof AttributeSource other)\
+    \ {\n      if (hasAttributes()) {\n        if (!other.hasAttributes()) {\n   \
+    \       return false;\n        }\n\n        if (this.attributeImpls.size() !=\
+    \ other.attributeImpls.size()) {\n          return false;\n        }\n\n     \
+    \   // it is only equal if all attribute impls are the same in the same order\n\
+    \        State thisState = this.getCurrentState();\n        State otherState =\
+    \ other.getCurrentState();\n        while (thisState != null && otherState !=\
+    \ null) {\n          if (otherState.attribute.getClass() != thisState.attribute.getClass()\n\
+    \              || !otherState.attribute.equals(thisState.attribute)) {\n     \
+    \       return false;\n          }\n          thisState = thisState.next;\n  \
+    \        otherState = otherState.next;\n        }\n        return true;\n    \
+    \  } else {\n        return !other.hasAttributes();\n      }\n    } else {\n \
+    \     return false;\n    }\n  }\n\n  /**\n   * This method returns the current\
+    \ attribute values as a string in the following format by calling\n   * the {@link\
+    \ #reflectWith(AttributeReflector)} method:\n   *\n   * <ul>\n   *   <li><em>iff\
+    \ {@code prependAttClass=true}:</em> {@code\n   *       \"AttributeClass#key=value,AttributeClass#key=value\"\
+    }\n   *   <li><em>iff {@code prependAttClass=false}:</em> {@code \"key=value,key=value\"\
+    }\n   * </ul>\n   *\n   * @see #reflectWith(AttributeReflector)\n   */\n  public\
+    \ final String reflectAsString(final boolean prependAttClass) {\n    final StringBuilder\
+    \ buffer = new StringBuilder();\n    reflectWith(\n        new AttributeReflector()\
+    \ {\n          @Override\n          public void reflect(Class<? extends Attribute>\
+    \ attClass, String key, Object value) {\n            if (buffer.length() > 0)\
+    \ {\n              buffer.append(',');\n            }\n            if (prependAttClass)\
+    \ {\n              buffer.append(attClass.getName()).append('#');\n          \
+    \  }\n            buffer.append(key).append('=').append((value == null) ? \"null\"\
+    \ : value);\n          }\n        });\n    return buffer.toString();\n  }\n\n\
+    \  /**\n   * This method is for introspection of attributes, it should simply\
+    \ add the key/values this\n   * AttributeSource holds to the given {@link AttributeReflector}.\n\
+    \   *\n   * <p>This method iterates over all Attribute implementations and calls\
+    \ the corresponding {@link\n   * AttributeImpl#reflectWith} method.\n   *\n  \
+    \ * @see AttributeImpl#reflectWith\n   */\n  public final void reflectWith(AttributeReflector\
+    \ reflector) {\n    for (State state = getCurrentState(); state != null; state\
+    \ = state.next) {\n      state.attribute.reflectWith(reflector);\n    }\n  }\n\
+    \n  /**\n   * Performs a clone of all {@link AttributeImpl} instances returned\
+    \ in a new {@code\n   * AttributeSource} instance. This method can be used to\
+    \ e.g. create another TokenStream with\n   * exactly the same attributes (using\
+    \ {@link #AttributeSource(AttributeSource)}). You can also use\n   * it as a (non-performant)\
+    \ replacement for {@link #captureState}, if you need to look into /\n   * modify\
+    \ the captured state.\n   */\n  public final AttributeSource cloneAttributes()\
+    \ {\n    final AttributeSource clone = new AttributeSource(this.factory);\n\n\
+    \    if (hasAttributes()) {\n      // first clone the impls\n      for (State\
+    \ state = getCurrentState(); state != null; state = state.next) {\n        clone.attributeImpls.put(state.attribute.getClass(),\
+    \ state.attribute.clone());\n      }\n\n      // now the interfaces\n      for\
+    \ (Entry<Class<? extends Attribute>, AttributeImpl> entry : this.attributes.entrySet())\
+    \ {\n        clone.attributes.put(entry.getKey(), clone.attributeImpls.get(entry.getValue().getClass()));\n\
+    \      }\n    }\n\n    return clone;\n  }\n\n  /**\n   * Copies the contents of\
+    \ this {@code AttributeSource} to the given target {@code\n   * AttributeSource}.\
+    \ The given instance has to provide all {@link Attribute}s this instance\n   *\
+    \ contains. The actual attribute implementations must be identical in both {@code\n\
+    \   * AttributeSource} instances; ideally both AttributeSource instances should\
+    \ use the same {@link\n   * AttributeFactory}. You can use this method as a replacement\
+    \ for {@link #restoreState}, if you\n   * use {@link #cloneAttributes} instead\
+    \ of {@link #captureState}.\n   */\n  public final void copyTo(AttributeSource\
+    \ target) {\n    for (State state = getCurrentState(); state != null; state =\
+    \ state.next) {\n      final AttributeImpl targetImpl = target.attributeImpls.get(state.attribute.getClass());\n\
+    \      if (targetImpl == null) {\n        throw new IllegalArgumentException(\n\
+    \            \"This AttributeSource contains AttributeImpl of type \"\n      \
+    \          + state.attribute.getClass().getName()\n                + \" that is\
+    \ not in the target\");\n      }\n      state.attribute.copyTo(targetImpl);\n\
+    \    }\n  }\n\n  /**\n   * Returns a string consisting of the class's simple name,\
+    \ the hex representation of the identity\n   * hash code, and the current reflection\
+    \ of all attributes.\n   *\n   * @see #reflectAsString(boolean)\n   */\n  @Override\n\
+    \  public String toString() {\n    return getClass().getSimpleName()\n       \
+    \ + '@'\n        + Integer.toHexString(System.identityHashCode(this))\n      \
+    \  + \" \"\n        + reflectAsString(false);\n  }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: TokenStream.java\n/*\n * Licensed to the\
+    \ Apache Software Foundation (ASF) under one or more\n * contributor license agreements.\
+    \  See the NOTICE file distributed with\n * this work for additional information\
+    \ regarding copyright ownership.\n * The ASF licenses this file to You under the\
+    \ Apache License, Version 2.0\n * (the \"License\"); you may not use this file\
+    \ except in compliance with\n * the License.  You may obtain a copy of the License\
+    \ at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required\
+    \ by applicable law or agreed to in writing, software\n * distributed under the\
+    \ License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS\
+    \ OF ANY KIND, either express or implied.\n * See the License for the specific\
+    \ language governing permissions and\n * limitations under the License.\n */\n\
+    package org.apache.lucene.analysis;\n\nimport java.io.Closeable;\nimport java.io.IOException;\n\
+    import java.lang.reflect.Modifier;\nimport org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;\n\
+    import org.apache.lucene.document.Document;\nimport org.apache.lucene.document.Field;\n\
+    import org.apache.lucene.index.IndexWriter;\nimport org.apache.lucene.util.Attribute;\n\
+    import org.apache.lucene.util.AttributeFactory;\nimport org.apache.lucene.util.AttributeImpl;\n\
+    import org.apache.lucene.util.AttributeSource;\n\n/**\n * A <code>TokenStream</code>\
+    \ enumerates the sequence of tokens, either from {@link Field}s of a\n * {@link\
+    \ Document} or from query text.\n *\n * <p>This is an abstract class; concrete\
+    \ subclasses are:\n *\n * <ul>\n *   <li>{@link Tokenizer}, a <code>TokenStream</code>\
+    \ whose input is a Reader; and\n *   <li>{@link TokenFilter}, a <code>TokenStream</code>\
+    \ whose input is another <code>TokenStream\n *       </code>.\n * </ul>\n *\n\
+    \ * <code>TokenStream</code> extends {@link AttributeSource}, which provides access\
+    \ to all of the\n * token {@link Attribute}s for the <code>TokenStream</code>.\
+    \ Note that only one instance per {@link\n * AttributeImpl} is created and reused\
+    \ for every token. This approach reduces object creation and\n * allows local\
+    \ caching of references to the {@link AttributeImpl}s. See {@link #incrementToken()}\n\
+    \ * for further details.\n *\n * <p><b>The workflow of the new <code>TokenStream</code>\
+    \ API is as follows:</b>\n *\n * <ol>\n *   <li>Instantiation of <code>TokenStream</code>/{@link\
+    \ TokenFilter}s which add/get attributes\n *       to/from the {@link AttributeSource}.\n\
+    \ *   <li>The consumer calls {@link TokenStream#reset()}.\n *   <li>The consumer\
+    \ retrieves attributes from the stream and stores local references to all\n *\
+    \       attributes it wants to access.\n *   <li>The consumer calls {@link #incrementToken()}\
+    \ until it returns false consuming the\n *       attributes after each call.\n\
+    \ *   <li>The consumer calls {@link #end()} so that any end-of-stream operations\
+    \ can be performed.\n *   <li>The consumer calls {@link #close()} to release any\
+    \ resource when finished using the <code>\n *       TokenStream</code>.\n * </ol>\n\
+    \ *\n * To make sure that filters and consumers know which attributes are available,\
+    \ the attributes must\n * be added during instantiation. Filters and consumers\
+    \ are not required to check for availability\n * of attributes in {@link #incrementToken()}.\n\
+    \ *\n * <p>You can find some example code for the new API in the analysis package\
+    \ level Javadoc.\n *\n * <p>Sometimes it is desirable to capture a current state\
+    \ of a <code>TokenStream</code>, e.g., for\n * buffering purposes (see {@link\
+    \ CachingTokenFilter}, TeeSinkTokenFilter). For this usecase {@link\n * AttributeSource#captureState}\
+    \ and {@link AttributeSource#restoreState} can be used.\n *\n * <p>The {@code\
+    \ TokenStream}-API in Lucene is based on the decorator pattern. Therefore all\n\
+    \ * non-abstract subclasses must be final or have at least a final implementation\
+    \ of {@link\n * #incrementToken}! This is checked when Java assertions are enabled.\n\
+    \ */\npublic abstract class TokenStream extends AttributeSource implements Closeable\
+    \ {\n\n  /** Default {@link AttributeFactory} instance that should be used for\
+    \ TokenStreams. */\n  public static final AttributeFactory DEFAULT_TOKEN_ATTRIBUTE_FACTORY\
+    \ =\n      AttributeFactory.getStaticImplementation(\n          AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY,\
+    \ PackedTokenAttributeImpl.class);\n\n  /** A TokenStream using the default attribute\
+    \ factory. */\n  protected TokenStream() {\n    super(DEFAULT_TOKEN_ATTRIBUTE_FACTORY);\n\
+    \    assert assertFinal();\n  }\n\n  /** A TokenStream that uses the same attributes\
+    \ as the supplied one. */\n  protected TokenStream(AttributeSource input) {\n\
+    \    super(input);\n    assert assertFinal();\n  }\n\n  /**\n   * A TokenStream\
+    \ using the supplied AttributeFactory for creating new {@link Attribute} instances.\n\
+    \   */\n  protected TokenStream(AttributeFactory factory) {\n    super(factory);\n\
+    \    assert assertFinal();\n  }\n\n  private boolean assertFinal() {\n    try\
+    \ {\n      final Class<?> clazz = getClass();\n      if (!clazz.desiredAssertionStatus())\
+    \ return true;\n      assert clazz.isAnonymousClass()\n              || (clazz.getModifiers()\
+    \ & (Modifier.FINAL | Modifier.PRIVATE)) != 0\n              || Modifier.isFinal(clazz.getMethod(\"\
+    incrementToken\").getModifiers())\n          : \"TokenStream implementation classes\
+    \ or at least their incrementToken() implementation must be final\";\n      return\
+    \ true;\n    } catch (\n        @SuppressWarnings(\"unused\")\n        NoSuchMethodException\
+    \ nsme) {\n      return false;\n    }\n  }\n\n  /**\n   * Consumers (i.e., {@link\
+    \ IndexWriter}) use this method to advance the stream to the next token.\n   *\
+    \ Implementing classes must implement this method and update the appropriate {@link\n\
+    \   * AttributeImpl}s with the attributes of the next token.\n   *\n   * <p>The\
+    \ producer must make no assumptions about the attributes after the method has\
+    \ been\n   * returned: the caller may arbitrarily change it. If the producer needs\
+    \ to preserve the state for\n   * subsequent calls, it can use {@link #captureState}\
+    \ to create a copy of the current attribute\n   * state.\n   *\n   * <p>This method\
+    \ is called for every token of a document, so an efficient implementation is\n\
+    \   * crucial for good performance. To avoid calls to {@link #addAttribute(Class)}\
+    \ and {@link\n   * #getAttribute(Class)}, references to all {@link AttributeImpl}s\
+    \ that this stream uses should be\n   * retrieved during instantiation.\n   *\n\
+    \   * <p>To ensure that filters and consumers know which attributes are available,\
+    \ the attributes\n   * must be added during instantiation. Filters and consumers\
+    \ are not required to check for\n   * availability of attributes in {@link #incrementToken()}.\n\
+    \   *\n   * @return false for end of stream; true otherwise\n   */\n  public abstract\
+    \ boolean incrementToken() throws IOException;\n\n  /**\n   * This method is called\
+    \ by the consumer after the last token has been consumed, after {@link\n   * #incrementToken()}\
+    \ returned <code>false</code> (using the new <code>TokenStream</code> API).\n\
+    \   * Streams implementing the old API should upgrade to use this feature.\n \
+    \  *\n   * <p>This method can be used to perform any end-of-stream operations,\
+    \ such as setting the final\n   * offset of a stream. The final offset of a stream\
+    \ might differ from the offset of the last token\n   * eg in case one or more\
+    \ whitespaces followed after the last token, but a WhitespaceTokenizer was\n \
+    \  * used.\n   *\n   * <p>Additionally any skipped positions (such as those removed\
+    \ by a stopfilter) can be applied to\n   * the position increment, or any adjustment\
+    \ of other attributes where the end-of-stream value may\n   * be important.\n\
+    \   *\n   * <p>If you override this method, always call {@code super.end()}.\n\
+    \   *\n   * @throws IOException If an I/O error occurs\n   */\n  public void end()\
+    \ throws IOException {\n    endAttributes(); // LUCENE-3849: don't consume dirty\
+    \ atts\n  }\n\n  /**\n   * This method is called by a consumer before it begins\
+    \ consumption using {@link\n   * #incrementToken()}.\n   *\n   * <p>Resets this\
+    \ stream to a clean state. Stateful implementations must implement this method\
+    \ so\n   * that they can be reused, just as if they had been created fresh.\n\
+    \   *\n   * <p>If you override this method, always call {@code super.reset()},\
+    \ otherwise some internal\n   * state will not be correctly reset (e.g., {@link\
+    \ Tokenizer} will throw {@link\n   * IllegalStateException} on further usage).\n\
+    \   */\n  public void reset() throws IOException {}\n\n  /**\n   * Releases resources\
+    \ associated with this stream.\n   *\n   * <p>If you override this method, always\
+    \ call {@code super.close()}, otherwise some internal\n   * state will not be\
+    \ correctly reset (e.g., {@link Tokenizer} will throw {@link\n   * IllegalStateException}\
+    \ on reuse).\n   */\n  @Override\n  public void close() throws IOException {}\n\
+    }\n\nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 13:17:06\n"
+  role: user

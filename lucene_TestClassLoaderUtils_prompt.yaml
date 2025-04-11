@@ -1,0 +1,36 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/ClassLoaderUtils.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestClassLoaderUtils.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\n/**\n * Helper class\
+    \ used by ServiceLoader to investigate parent/child relationships of {@link\n\
+    \ * ClassLoader}s.\n *\n * @lucene.internal\n */\npublic interface ClassLoaderUtils\
+    \ {\n\n  /**\n   * Utility method to check if some class loader is a (grand-)parent\
+    \ of or the same as another one.\n   * This means the child will be able to load\
+    \ all classes from the parent, too.\n   *\n   * <p>If caller's codesource doesn't\
+    \ have enough permissions to do the check, {@code false} is\n   * returned (this\
+    \ is fine, because if we get a {@code SecurityException} it is for sure no\n \
+    \  * parent).\n   */\n  static boolean isParentClassLoader(final ClassLoader parent,\
+    \ final ClassLoader child) {\n    try {\n      ClassLoader cl = child;\n     \
+    \ while (cl != null) {\n        if (cl == parent) {\n          return true;\n\
+    \        }\n        cl = cl.getParent();\n      }\n      return false;\n    }\
+    \ catch (\n        @SuppressWarnings(\"unused\")\n        SecurityException se)\
+    \ {\n      return false;\n    }\n  }\n}\n\n### Source File Dependency Files Content\n\
+    ### Dependency File: empty.txt\n\nOutput the complete test file, code only, no\
+    \ explanations.\n### Time\nCurrent time: 2025-04-11 03:42:58\n"
+  role: user

@@ -1,0 +1,367 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/ArrayUtil.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestArrayUtil.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.lang.reflect.Array;\n\
+    import java.util.Arrays;\nimport java.util.Comparator;\n\n/**\n * Methods for\
+    \ manipulating arrays.\n *\n * @lucene.internal\n */\npublic final class ArrayUtil\
+    \ {\n\n  /** Maximum length for an array (Integer.MAX_VALUE - RamUsageEstimator.NUM_BYTES_ARRAY_HEADER).\
+    \ */\n  public static final int MAX_ARRAY_LENGTH =\n      Integer.MAX_VALUE -\
+    \ RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;\n\n  private ArrayUtil() {} // no\
+    \ instance\n\n  /*\n    Begin Apache Harmony code\n\n    Revision taken on Friday,\
+    \ June 12. https://svn.apache.org/repos/asf/harmony/enhanced/classlib/archive/java6/modules/luni/src/main/java/java/lang/Integer.java\n\
+    \n  */\n\n  /**\n   * Parses a char array into an int.\n   *\n   * @param chars\
+    \ the character array\n   * @param offset The offset into the array\n   * @param\
+    \ len The length\n   * @return the int\n   * @throws NumberFormatException if\
+    \ it can't parse\n   */\n  public static int parseInt(char[] chars, int offset,\
+    \ int len) throws NumberFormatException {\n    return parseInt(chars, offset,\
+    \ len, 10);\n  }\n\n  /**\n   * Parses the string argument as if it was an int\
+    \ value and returns the result. Throws\n   * NumberFormatException if the string\
+    \ does not represent an int quantity. The second argument\n   * specifies the\
+    \ radix to use when parsing the value.\n   *\n   * @param chars a string representation\
+    \ of an int quantity.\n   * @param radix the base to use for conversion.\n   *\
+    \ @return int the value represented by the argument\n   * @throws NumberFormatException\
+    \ if the argument could not be parsed as an int quantity.\n   */\n  public static\
+    \ int parseInt(char[] chars, int offset, int len, int radix)\n      throws NumberFormatException\
+    \ {\n    if (chars == null || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX)\
+    \ {\n      throw new NumberFormatException();\n    }\n    int i = 0;\n    if (len\
+    \ == 0) {\n      throw new NumberFormatException(\"chars length is 0\");\n   \
+    \ }\n    boolean negative = chars[offset + i] == '-';\n    if (negative && ++i\
+    \ == len) {\n      throw new NumberFormatException(\"can't convert to an int\"\
+    );\n    }\n    if (negative == true) {\n      offset++;\n      len--;\n    }\n\
+    \    return parse(chars, offset, len, radix, negative);\n  }\n\n  private static\
+    \ int parse(char[] chars, int offset, int len, int radix, boolean negative)\n\
+    \      throws NumberFormatException {\n    int max = Integer.MIN_VALUE / radix;\n\
+    \    int result = 0;\n    for (int i = 0; i < len; i++) {\n      int digit = Character.digit(chars[i\
+    \ + offset], radix);\n      if (digit == -1) {\n        throw new NumberFormatException(\"\
+    Unable to parse\");\n      }\n      if (max > result) {\n        throw new NumberFormatException(\"\
+    Unable to parse\");\n      }\n      int next = result * radix - digit;\n     \
+    \ if (next > result) {\n        throw new NumberFormatException(\"Unable to parse\"\
+    );\n      }\n      result = next;\n    }\n    /*while (offset < len) {\n\n   \
+    \ }*/\n    if (!negative) {\n      result = -result;\n      if (result < 0) {\n\
+    \        throw new NumberFormatException(\"Unable to parse\");\n      }\n    }\n\
+    \    return result;\n  }\n\n  /*\n\n  END APACHE HARMONY CODE\n   */\n\n  /**\n\
+    \   * Returns an array size &gt;= minTargetSize, generally over-allocating exponentially\
+    \ to achieve\n   * amortized linear-time cost as the array grows.\n   *\n   *\
+    \ <p>NOTE: this was originally borrowed from Python 2.4.2 listobject.c sources\
+    \ (attribution in\n   * LICENSE.txt), but has now been substantially changed based\
+    \ on discussions from java-dev thread\n   * with subject \"Dynamic array reallocation\
+    \ algorithms\", started on Jan 12 2010.\n   *\n   * @param minTargetSize Minimum\
+    \ required value to be returned.\n   * @param bytesPerElement Bytes used by each\
+    \ element of the array. See constants in {@link\n   *     RamUsageEstimator}.\n\
+    \   * @lucene.internal\n   */\n  public static int oversize(int minTargetSize,\
+    \ int bytesPerElement) {\n\n    if (minTargetSize < 0) {\n      // catch usage\
+    \ that accidentally overflows int\n      throw new IllegalArgumentException(\"\
+    invalid array size \" + minTargetSize);\n    }\n\n    if (minTargetSize == 0)\
+    \ {\n      // wait until at least one element is requested\n      return 0;\n\
+    \    }\n\n    if (minTargetSize > MAX_ARRAY_LENGTH) {\n      throw new IllegalArgumentException(\n\
+    \          \"requested array size \"\n              + minTargetSize\n        \
+    \      + \" exceeds maximum array in java (\"\n              + MAX_ARRAY_LENGTH\n\
+    \              + \")\");\n    }\n\n    // asymptotic exponential growth by 1/8th,\
+    \ favors\n    // spending a bit more CPU to not tie up too much wasted\n    //\
+    \ RAM:\n    int extra = minTargetSize >> 3;\n\n    if (extra < 3) {\n      //\
+    \ for very small arrays, where constant overhead of\n      // realloc is presumably\
+    \ relatively high, we grow\n      // faster\n      extra = 3;\n    }\n\n    int\
+    \ newSize = minTargetSize + extra;\n\n    // add 7 to allow for worst case byte\
+    \ alignment addition below:\n    if (newSize + 7 < 0 || newSize + 7 > MAX_ARRAY_LENGTH)\
+    \ {\n      // int overflowed, or we exceeded the maximum array length\n      return\
+    \ MAX_ARRAY_LENGTH;\n    }\n\n    if (Constants.JRE_IS_64BIT) {\n      // round\
+    \ up to 8 byte alignment in 64bit env\n      return switch (bytesPerElement) {\n\
+    \        // round up to multiple of 2\n        case 4 -> (newSize + 1) & 0x7ffffffe;\n\
+    \        // round up to multiple of 4\n        case 2 -> (newSize + 3) & 0x7ffffffc;\n\
+    \        // round up to multiple of 8\n        case 1 -> (newSize + 7) & 0x7ffffff8;\n\
+    \        // no rounding\n        case 8 -> newSize;\n        // odd (invalid?)\
+    \ size\n        default -> newSize;\n      };\n    } else {\n      // In 32bit\
+    \ jvm, it's still 8-byte aligned,\n      // but the array header is 12 bytes,\
+    \ not a multiple of 8.\n      // So saving 4,12,20,28... bytes of data is the\
+    \ most cost-effective.\n      return switch (bytesPerElement) {\n        // align\
+    \ with size of 4,12,20,28...\n        case 1 -> ((newSize + 3) & 0x7ffffff8) +\
+    \ 4;\n        // align with size of 6,10,14,18...\n        case 2 -> ((newSize\
+    \ + 1) & 0x7ffffffc) + 2;\n        // align with size of 5,7,9,11...\n       \
+    \ case 4 -> (newSize & 0x7ffffffe) + 1;\n        // no processing required\n \
+    \       case 8 -> newSize;\n        // odd (invalid?) size\n        default ->\
+    \ newSize;\n      };\n    }\n  }\n\n  /**\n   * Returns a new array whose size\
+    \ is exact the specified {@code newLength} without over-allocating\n   */\n  public\
+    \ static <T> T[] growExact(T[] array, int newLength) {\n    Class<? extends Object[]>\
+    \ type = array.getClass();\n    @SuppressWarnings(\"unchecked\")\n    T[] copy\
+    \ =\n        (type == Object[].class)\n            ? (T[]) new Object[newLength]\n\
+    \            : (T[]) Array.newInstance(type.getComponentType(), newLength);\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /** Returns a larger array, generally over-allocating exponentially */\n \
+    \ public static <T> T[] grow(T[] array) {\n    return grow(array, 1 + array.length);\n\
+    \  }\n\n  /**\n   * Returns an array whose size is at least {@code minSize}, generally\
+    \ over-allocating\n   * exponentially\n   */\n  public static <T> T[] grow(T[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      final int newLength = oversize(minSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);\n\
+    \      return growExact(array, newLength);\n    } else return array;\n  }\n\n\
+    \  /**\n   * Returns a new array whose size is exact the specified {@code newLength}\
+    \ without over-allocating\n   */\n  public static short[] growExact(short[] array,\
+    \ int newLength) {\n    short[] copy = new short[newLength];\n    System.arraycopy(array,\
+    \ 0, copy, 0, array.length);\n    return copy;\n  }\n\n  /**\n   * Returns an\
+    \ array whose size is at least {@code minSize}, generally over-allocating\n  \
+    \ * exponentially\n   */\n  public static short[] grow(short[] array, int minSize)\
+    \ {\n    assert minSize >= 0 : \"size must be positive (got \" + minSize + \"\
+    ): likely integer overflow?\";\n    if (array.length < minSize) {\n      return\
+    \ growExact(array, oversize(minSize, Short.BYTES));\n    } else return array;\n\
+    \  }\n\n  /** Returns a larger array, generally over-allocating exponentially\
+    \ */\n  public static short[] grow(short[] array) {\n    return grow(array, 1\
+    \ + array.length);\n  }\n\n  /**\n   * Returns a new array whose size is exact\
+    \ the specified {@code newLength} without over-allocating\n   */\n  public static\
+    \ float[] growExact(float[] array, int newLength) {\n    float[] copy = new float[newLength];\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /**\n   * Returns an array whose size is at least {@code minSize}, generally\
+    \ over-allocating\n   * exponentially\n   */\n  public static float[] grow(float[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      float[] copy = new float[oversize(minSize, Float.BYTES)];\n      System.arraycopy(array,\
+    \ 0, copy, 0, array.length);\n      return copy;\n    } else return array;\n \
+    \ }\n\n  /** Returns a larger array, generally over-allocating exponentially */\n\
+    \  public static float[] grow(float[] array) {\n    return grow(array, 1 + array.length);\n\
+    \  }\n\n  /**\n   * Returns a new array whose size is exact the specified {@code\
+    \ newLength} without over-allocating\n   */\n  public static double[] growExact(double[]\
+    \ array, int newLength) {\n    double[] copy = new double[newLength];\n    System.arraycopy(array,\
+    \ 0, copy, 0, array.length);\n    return copy;\n  }\n\n  /**\n   * Returns an\
+    \ array whose size is at least {@code minSize}, generally over-allocating\n  \
+    \ * exponentially\n   */\n  public static double[] grow(double[] array, int minSize)\
+    \ {\n    assert minSize >= 0 : \"size must be positive (got \" + minSize + \"\
+    ): likely integer overflow?\";\n    if (array.length < minSize) {\n      return\
+    \ growExact(array, oversize(minSize, Double.BYTES));\n    } else return array;\n\
+    \  }\n\n  /** Returns a larger array, generally over-allocating exponentially\
+    \ */\n  public static double[] grow(double[] array) {\n    return grow(array,\
+    \ 1 + array.length);\n  }\n\n  /**\n   * Returns a new array whose size is exact\
+    \ the specified {@code newLength} without over-allocating\n   */\n  public static\
+    \ int[] growExact(int[] array, int newLength) {\n    int[] copy = new int[newLength];\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /**\n   * Returns an array whose size is at least {@code minLength}, generally\
+    \ over-allocating\n   * exponentially, but never allocating more than {@code maxLength}\
+    \ elements.\n   */\n  public static int[] growInRange(int[] array, int minLength,\
+    \ int maxLength) {\n    assert minLength >= 0\n        : \"length must be positive\
+    \ (got \" + minLength + \"): likely integer overflow?\";\n\n    if (minLength\
+    \ > maxLength) {\n      throw new IllegalArgumentException(\n          \"requested\
+    \ minimum array length \"\n              + minLength\n              + \" is larger\
+    \ than requested maximum array length \"\n              + maxLength);\n    }\n\
+    \n    if (array.length >= minLength) {\n      return array;\n    }\n\n    int\
+    \ potentialLength = oversize(minLength, Integer.BYTES);\n    return growExact(array,\
+    \ Math.min(maxLength, potentialLength));\n  }\n\n  /**\n   * Returns an array\
+    \ whose size is at least {@code minSize}, generally over-allocating\n   * exponentially\n\
+    \   */\n  public static int[] grow(int[] array, int minSize) {\n    return growInRange(array,\
+    \ minSize, Integer.MAX_VALUE);\n  }\n\n  /**\n   * Returns an array whose size\
+    \ is at least {@code minSize}, generally over-allocating\n   * exponentially,\
+    \ and it will not copy the origin data to the new array\n   */\n  public static\
+    \ int[] growNoCopy(int[] array, int minSize) {\n    assert minSize >= 0 : \"size\
+    \ must be positive (got \" + minSize + \"): likely integer overflow?\";\n    if\
+    \ (array.length < minSize) {\n      return new int[oversize(minSize, Integer.BYTES)];\n\
+    \    } else return array;\n  }\n\n  /** Returns a larger array, generally over-allocating\
+    \ exponentially */\n  public static int[] grow(int[] array) {\n    return grow(array,\
+    \ 1 + array.length);\n  }\n\n  /**\n   * Returns a new array whose size is exact\
+    \ the specified {@code newLength} without over-allocating\n   */\n  public static\
+    \ long[] growExact(long[] array, int newLength) {\n    long[] copy = new long[newLength];\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /**\n   * Returns an array whose size is at least {@code minSize}, generally\
+    \ over-allocating\n   * exponentially\n   */\n  public static long[] grow(long[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      return growExact(array, oversize(minSize, Long.BYTES));\n    } else\
+    \ return array;\n  }\n\n  /**\n   * Returns an array whose size is at least {@code\
+    \ minSize}, generally over-allocating\n   * exponentially, and it will not copy\
+    \ the origin data to the new array\n   */\n  public static long[] growNoCopy(long[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      return new long[oversize(minSize, Long.BYTES)];\n    } else return\
+    \ array;\n  }\n\n  /** Returns a larger array, generally over-allocating exponentially\
+    \ */\n  public static long[] grow(long[] array) {\n    return grow(array, 1 +\
+    \ array.length);\n  }\n\n  /**\n   * Returns a new array whose size is exact the\
+    \ specified {@code newLength} without over-allocating\n   */\n  public static\
+    \ byte[] growExact(byte[] array, int newLength) {\n    byte[] copy = new byte[newLength];\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /**\n   * Returns an array whose size is at least {@code minSize}, generally\
+    \ over-allocating\n   * exponentially\n   */\n  public static byte[] grow(byte[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      return growExact(array, oversize(minSize, Byte.BYTES));\n    } else\
+    \ return array;\n  }\n\n  /**\n   * Returns an array whose size is at least {@code\
+    \ minSize}, generally over-allocating\n   * exponentially, and it will not copy\
+    \ the origin data to the new array\n   */\n  public static byte[] growNoCopy(byte[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      return new byte[oversize(minSize, Byte.BYTES)];\n    } else return\
+    \ array;\n  }\n\n  /** Returns a larger array, generally over-allocating exponentially\
+    \ */\n  public static byte[] grow(byte[] array) {\n    return grow(array, 1 +\
+    \ array.length);\n  }\n\n  /**\n   * Returns a new array whose size is exact the\
+    \ specified {@code newLength} without over-allocating\n   */\n  public static\
+    \ char[] growExact(char[] array, int newLength) {\n    char[] copy = new char[newLength];\n\
+    \    System.arraycopy(array, 0, copy, 0, array.length);\n    return copy;\n  }\n\
+    \n  /**\n   * Returns an array whose size is at least {@code minSize}, generally\
+    \ over-allocating\n   * exponentially\n   */\n  public static char[] grow(char[]\
+    \ array, int minSize) {\n    assert minSize >= 0 : \"size must be positive (got\
+    \ \" + minSize + \"): likely integer overflow?\";\n    if (array.length < minSize)\
+    \ {\n      return growExact(array, oversize(minSize, Character.BYTES));\n    }\
+    \ else return array;\n  }\n\n  /** Returns a larger array, generally over-allocating\
+    \ exponentially */\n  public static char[] grow(char[] array) {\n    return grow(array,\
+    \ 1 + array.length);\n  }\n\n  /** Returns hash of chars in range start (inclusive)\
+    \ to end (inclusive) */\n  public static int hashCode(char[] array, int start,\
+    \ int end) {\n    int code = 0;\n    for (int i = end - 1; i >= start; i--) code\
+    \ = code * 31 + array[i];\n    return code;\n  }\n\n  /** Swap values stored in\
+    \ slots <code>i</code> and <code>j</code> */\n  public static <T> void swap(T[]\
+    \ arr, int i, int j) {\n    final T tmp = arr[i];\n    arr[i] = arr[j];\n    arr[j]\
+    \ = tmp;\n  }\n\n  // intro-sorts\n\n  /**\n   * Sorts the given array slice using\
+    \ the {@link Comparator}. This method uses the intro sort\n   * algorithm, but\
+    \ falls back to insertion sort for small arrays.\n   *\n   * @see IntroSorter\n\
+    \   * @param fromIndex start index (inclusive)\n   * @param toIndex end index\
+    \ (exclusive)\n   */\n  public static <T> void introSort(T[] a, int fromIndex,\
+    \ int toIndex, Comparator<? super T> comp) {\n    if (toIndex - fromIndex <= 1)\
+    \ return;\n    new ArrayIntroSorter<>(a, comp).sort(fromIndex, toIndex);\n  }\n\
+    \n  /**\n   * Sorts the given array using the {@link Comparator}. This method\
+    \ uses the intro sort algorithm,\n   * but falls back to insertion sort for small\
+    \ arrays.\n   *\n   * @see IntroSorter\n   */\n  public static <T> void introSort(T[]\
+    \ a, Comparator<? super T> comp) {\n    introSort(a, 0, a.length, comp);\n  }\n\
+    \n  /**\n   * Sorts the given array slice in natural order. This method uses the\
+    \ intro sort algorithm, but\n   * falls back to insertion sort for small arrays.\n\
+    \   *\n   * @see IntroSorter\n   * @param fromIndex start index (inclusive)\n\
+    \   * @param toIndex end index (exclusive)\n   */\n  public static <T extends\
+    \ Comparable<? super T>> void introSort(\n      T[] a, int fromIndex, int toIndex)\
+    \ {\n    if (toIndex - fromIndex <= 1) return;\n    introSort(a, fromIndex, toIndex,\
+    \ Comparator.naturalOrder());\n  }\n\n  /**\n   * Sorts the given array in natural\
+    \ order. This method uses the intro sort algorithm, but falls\n   * back to insertion\
+    \ sort for small arrays.\n   *\n   * @see IntroSorter\n   */\n  public static\
+    \ <T extends Comparable<? super T>> void introSort(T[] a) {\n    introSort(a,\
+    \ 0, a.length);\n  }\n\n  // tim sorts:\n\n  /**\n   * Sorts the given array slice\
+    \ using the {@link Comparator}. This method uses the Tim sort\n   * algorithm,\
+    \ but falls back to binary sort for small arrays.\n   *\n   * @see TimSorter\n\
+    \   * @param fromIndex start index (inclusive)\n   * @param toIndex end index\
+    \ (exclusive)\n   */\n  public static <T> void timSort(T[] a, int fromIndex, int\
+    \ toIndex, Comparator<? super T> comp) {\n    if (toIndex - fromIndex <= 1) return;\n\
+    \    new ArrayTimSorter<>(a, comp, a.length / 64).sort(fromIndex, toIndex);\n\
+    \  }\n\n  /**\n   * Sorts the given array using the {@link Comparator}. This method\
+    \ uses the Tim sort algorithm,\n   * but falls back to binary sort for small arrays.\n\
+    \   *\n   * @see TimSorter\n   */\n  public static <T> void timSort(T[] a, Comparator<?\
+    \ super T> comp) {\n    timSort(a, 0, a.length, comp);\n  }\n\n  /**\n   * Sorts\
+    \ the given array slice in natural order. This method uses the Tim sort algorithm,\
+    \ but\n   * falls back to binary sort for small arrays.\n   *\n   * @see TimSorter\n\
+    \   * @param fromIndex start index (inclusive)\n   * @param toIndex end index\
+    \ (exclusive)\n   */\n  public static <T extends Comparable<? super T>> void timSort(T[]\
+    \ a, int fromIndex, int toIndex) {\n    if (toIndex - fromIndex <= 1) return;\n\
+    \    timSort(a, fromIndex, toIndex, Comparator.naturalOrder());\n  }\n\n  /**\n\
+    \   * Sorts the given array in natural order. This method uses the Tim sort algorithm,\
+    \ but falls back\n   * to binary sort for small arrays.\n   *\n   * @see TimSorter\n\
+    \   */\n  public static <T extends Comparable<? super T>> void timSort(T[] a)\
+    \ {\n    timSort(a, 0, a.length);\n  }\n\n  /**\n   * Reorganize {@code arr[from:to[}\
+    \ so that the element at offset k is at the same position as if\n   * {@code arr[from:to]}\
+    \ was sorted, and all elements on its left are less than or equal to it, and\n\
+    \   * all elements on its right are greater than or equal to it.\n   *\n   * <p>This\
+    \ runs in linear time on average and in {@code n log(n)} time in the worst case.\n\
+    \   *\n   * @param arr Array to be re-organized.\n   * @param from Starting index\
+    \ for re-organization. Elements before this index will be left as is.\n   * @param\
+    \ to Ending index. Elements after this index will be left as is.\n   * @param\
+    \ k Index of element to sort from. Value must be less than 'to' and greater than\
+    \ or equal\n   *     to 'from'.\n   * @param comparator Comparator to use for\
+    \ sorting\n   */\n  public static <T> void select(\n      T[] arr, int from, int\
+    \ to, int k, Comparator<? super T> comparator) {\n    new IntroSelector() {\n\n\
+    \      T pivot;\n\n      @Override\n      protected void swap(int i, int j) {\n\
+    \        ArrayUtil.swap(arr, i, j);\n      }\n\n      @Override\n      protected\
+    \ void setPivot(int i) {\n        pivot = arr[i];\n      }\n\n      @Override\n\
+    \      protected int comparePivot(int j) {\n        return comparator.compare(pivot,\
+    \ arr[j]);\n      }\n    }.select(from, to, k);\n  }\n\n  /** Copies an array\
+    \ into a new array. */\n  public static byte[] copyArray(byte[] array) {\n   \
+    \ return copyOfSubArray(array, 0, array.length);\n  }\n\n  /**\n   * Copies the\
+    \ specified range of the given array into a new sub array.\n   *\n   * @param\
+    \ array the input array\n   * @param from the initial index of range to be copied\
+    \ (inclusive)\n   * @param to the final index of range to be copied (exclusive)\n\
+    \   */\n  public static byte[] copyOfSubArray(byte[] array, int from, int to)\
+    \ {\n    final byte[] copy = new byte[to - from];\n    System.arraycopy(array,\
+    \ from, copy, 0, to - from);\n    return copy;\n  }\n\n  /** Copies an array into\
+    \ a new array. */\n  public static char[] copyArray(char[] array) {\n    return\
+    \ copyOfSubArray(array, 0, array.length);\n  }\n\n  /**\n   * Copies the specified\
+    \ range of the given array into a new sub array.\n   *\n   * @param array the\
+    \ input array\n   * @param from the initial index of range to be copied (inclusive)\n\
+    \   * @param to the final index of range to be copied (exclusive)\n   */\n  public\
+    \ static char[] copyOfSubArray(char[] array, int from, int to) {\n    final char[]\
+    \ copy = new char[to - from];\n    System.arraycopy(array, from, copy, 0, to -\
+    \ from);\n    return copy;\n  }\n\n  /** Copies an array into a new array. */\n\
+    \  public static short[] copyArray(short[] array) {\n    return copyOfSubArray(array,\
+    \ 0, array.length);\n  }\n\n  /**\n   * Copies the specified range of the given\
+    \ array into a new sub array.\n   *\n   * @param array the input array\n   * @param\
+    \ from the initial index of range to be copied (inclusive)\n   * @param to the\
+    \ final index of range to be copied (exclusive)\n   */\n  public static short[]\
+    \ copyOfSubArray(short[] array, int from, int to) {\n    final short[] copy =\
+    \ new short[to - from];\n    System.arraycopy(array, from, copy, 0, to - from);\n\
+    \    return copy;\n  }\n\n  /** Copies an array into a new array. */\n  public\
+    \ static int[] copyArray(int[] array) {\n    return copyOfSubArray(array, 0, array.length);\n\
+    \  }\n\n  /**\n   * Copies the specified range of the given array into a new sub\
+    \ array.\n   *\n   * @param array the input array\n   * @param from the initial\
+    \ index of range to be copied (inclusive)\n   * @param to the final index of range\
+    \ to be copied (exclusive)\n   */\n  public static int[] copyOfSubArray(int[]\
+    \ array, int from, int to) {\n    final int[] copy = new int[to - from];\n   \
+    \ System.arraycopy(array, from, copy, 0, to - from);\n    return copy;\n  }\n\n\
+    \  /** Copies an array into a new array. */\n  public static long[] copyArray(long[]\
+    \ array) {\n    return copyOfSubArray(array, 0, array.length);\n  }\n\n  /**\n\
+    \   * Copies the specified range of the given array into a new sub array.\n  \
+    \ *\n   * @param array the input array\n   * @param from the initial index of\
+    \ range to be copied (inclusive)\n   * @param to the final index of range to be\
+    \ copied (exclusive)\n   */\n  public static long[] copyOfSubArray(long[] array,\
+    \ int from, int to) {\n    final long[] copy = new long[to - from];\n    System.arraycopy(array,\
+    \ from, copy, 0, to - from);\n    return copy;\n  }\n\n  /** Copies an array into\
+    \ a new array. */\n  public static float[] copyArray(float[] array) {\n    return\
+    \ copyOfSubArray(array, 0, array.length);\n  }\n\n  /**\n   * Copies the specified\
+    \ range of the given array into a new sub array.\n   *\n   * @param array the\
+    \ input array\n   * @param from the initial index of range to be copied (inclusive)\n\
+    \   * @param to the final index of range to be copied (exclusive)\n   */\n  public\
+    \ static float[] copyOfSubArray(float[] array, int from, int to) {\n    final\
+    \ float[] copy = new float[to - from];\n    System.arraycopy(array, from, copy,\
+    \ 0, to - from);\n    return copy;\n  }\n\n  /** Copies an array into a new array.\
+    \ */\n  public static double[] copyArray(double[] array) {\n    return copyOfSubArray(array,\
+    \ 0, array.length);\n  }\n\n  /**\n   * Copies the specified range of the given\
+    \ array into a new sub array.\n   *\n   * @param array the input array\n   * @param\
+    \ from the initial index of range to be copied (inclusive)\n   * @param to the\
+    \ final index of range to be copied (exclusive)\n   */\n  public static double[]\
+    \ copyOfSubArray(double[] array, int from, int to) {\n    final double[] copy\
+    \ = new double[to - from];\n    System.arraycopy(array, from, copy, 0, to - from);\n\
+    \    return copy;\n  }\n\n  /** Copies an array into a new array. */\n  public\
+    \ static <T> T[] copyArray(T[] array) {\n    return copyOfSubArray(array, 0, array.length);\n\
+    \  }\n\n  /**\n   * Copies the specified range of the given array into a new sub\
+    \ array.\n   *\n   * @param array the input array\n   * @param from the initial\
+    \ index of range to be copied (inclusive)\n   * @param to the final index of range\
+    \ to be copied (exclusive)\n   */\n  public static <T> T[] copyOfSubArray(T[]\
+    \ array, int from, int to) {\n    final int subLength = to - from;\n    final\
+    \ Class<? extends Object[]> type = array.getClass();\n    @SuppressWarnings(\"\
+    unchecked\")\n    final T[] copy =\n        (type == Object[].class)\n       \
+    \     ? (T[]) new Object[subLength]\n            : (T[]) Array.newInstance(type.getComponentType(),\
+    \ subLength);\n    System.arraycopy(array, from, copy, 0, subLength);\n    return\
+    \ copy;\n  }\n\n  /** Comparator for a fixed number of bytes. */\n  @FunctionalInterface\n\
+    \  public interface ByteArrayComparator {\n\n    /**\n     * Compare bytes starting\
+    \ from the given offsets. The return value has the same contract as\n     * {@link\
+    \ Comparator#compare(Object, Object)}.\n     */\n    int compare(byte[] a, int\
+    \ aI, byte[] b, int bI);\n  }\n\n  /** Return a comparator for exactly the specified\
+    \ number of bytes. */\n  public static ByteArrayComparator getUnsignedComparator(int\
+    \ numBytes) {\n    if (numBytes == Long.BYTES) {\n      // Used by LongPoint,\
+    \ DoublePoint\n      return ArrayUtil::compareUnsigned8;\n    } else if (numBytes\
+    \ == Integer.BYTES) {\n      // Used by IntPoint, FloatPoint, LatLonPoint, LatLonShape\n\
+    \      return ArrayUtil::compareUnsigned4;\n    } else {\n      return (a, aOffset,\
+    \ b, bOffset) ->\n          Arrays.compareUnsigned(a, aOffset, aOffset + numBytes,\
+    \ b, bOffset, bOffset + numBytes);\n    }\n  }\n\n  /** Compare exactly 8 unsigned\
+    \ bytes from the provided arrays. */\n  public static int compareUnsigned8(byte[]\
+    \ a, int aOffset, byte[] b, int bOffset) {\n    return Long.compareUnsigned(\n\
+    \        (long) BitUtil.VH_BE_LONG.get(a, aOffset), (long) BitUtil.VH_BE_LONG.get(b,\
+    \ bOffset));\n  }\n\n  /** Compare exactly 4 unsigned bytes from the provided\
+    \ arrays. */\n  public static int compareUnsigned4(byte[] a, int aOffset, byte[]\
+    \ b, int bOffset) {\n    return Integer.compareUnsigned(\n        (int) BitUtil.VH_BE_INT.get(a,\
+    \ aOffset), (int) BitUtil.VH_BE_INT.get(b, bOffset));\n  }\n}\n\n### Source File\
+    \ Dependency Files Content\n### Dependency File: empty.txt\n\nOutput the complete\
+    \ test file, code only, no explanations.\n### Time\nCurrent time: 2025-04-11 13:14:24\n"
+  role: user

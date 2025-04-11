@@ -1,0 +1,30 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: mockito\nSource File Path: mockito-core/src/main/java/org/mockito/internal/progress/ThreadSafeMockingProgress.java\n\
+    Test File Path: mockito-core/src/test/java/org/mockito/internal/progress/ThreadSafeMockingProgressTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Copyright (c) 2007 Mockito contributors\n\
+    \ * This program is made available under the terms of the MIT License.\n */\n\
+    package org.mockito.internal.progress;\n\n/**\n * Provides access to the {@link\
+    \ MockingProgress} of a corresponding {@link Thread}. Every {@link Thread} in\
+    \ Mockito has it s own {@link MockingProgress} to avoid data races while stubbing.\n\
+    \ */\npublic class ThreadSafeMockingProgress {\n\n    private static final ThreadLocal<MockingProgress>\
+    \ MOCKING_PROGRESS_PROVIDER =\n            new ThreadLocal<MockingProgress>()\
+    \ {\n                @Override\n                protected MockingProgress initialValue()\
+    \ {\n                    return new MockingProgressImpl();\n                }\n\
+    \            };\n\n    private ThreadSafeMockingProgress() {}\n\n    /**\n   \
+    \  * Returns the {@link MockingProgress} for the current Thread.\n     * <p>\n\
+    \     * <b>IMPORTANT</b>: Never assign and access the returned {@link MockingProgress}\
+    \ to an instance or static field. Thread safety can not be guaranteed in this\
+    \ case, cause the Thread that wrote the field might not be the same that read\
+    \ it. In other words multiple threads will access the same {@link MockingProgress}.\n\
+    \     *\n     * @return never <code>null</code>\n     */\n    public static final\
+    \ MockingProgress mockingProgress() {\n        return MOCKING_PROGRESS_PROVIDER.get();\n\
+    \    }\n}\n\n### Source File Dependency Files Content\n### Dependency File: empty.txt\n\
+    \nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 03:26:21\n"
+  role: user

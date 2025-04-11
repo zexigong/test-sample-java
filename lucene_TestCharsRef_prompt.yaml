@@ -1,0 +1,112 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: lucene\nSource File Path: lucene/core/src/java/org/apache/lucene/util/CharsRef.java\n\
+    Test File Path: lucene/core/src/test/org/apache/lucene/util/TestCharsRef.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n/*\n * Licensed to the Apache Software Foundation\
+    \ (ASF) under one or more\n * contributor license agreements.  See the NOTICE\
+    \ file distributed with\n * this work for additional information regarding copyright\
+    \ ownership.\n * The ASF licenses this file to You under the Apache License, Version\
+    \ 2.0\n * (the \"License\"); you may not use this file except in compliance with\n\
+    \ * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n\
+    \ *\n * Unless required by applicable law or agreed to in writing, software\n\
+    \ * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT\
+    \ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the\
+    \ License for the specific language governing permissions and\n * limitations\
+    \ under the License.\n */\npackage org.apache.lucene.util;\n\nimport java.util.Arrays;\n\
+    import java.util.Comparator;\nimport java.util.Objects;\n\n/**\n * Represents\
+    \ char[], as a slice (offset + length) into an existing char[]. The {@link #chars}\n\
+    \ * member should never be null; use {@link #EMPTY_CHARS} if necessary.\n *\n\
+    \ * @lucene.internal\n */\npublic final class CharsRef implements Comparable<CharsRef>,\
+    \ CharSequence, Cloneable {\n  /** An empty character array for convenience */\n\
+    \  public static final char[] EMPTY_CHARS = new char[0];\n\n  /** The contents\
+    \ of the CharsRef. Should never be {@code null}. */\n  public char[] chars;\n\n\
+    \  /** Offset of first valid character. */\n  public int offset;\n\n  /** Length\
+    \ of used characters. */\n  public int length;\n\n  /** Creates a new {@link CharsRef}\
+    \ initialized an empty array zero-length */\n  public CharsRef() {\n    this(EMPTY_CHARS,\
+    \ 0, 0);\n  }\n\n  /** Creates a new {@link CharsRef} initialized with an array\
+    \ of the given capacity */\n  public CharsRef(int capacity) {\n    chars = new\
+    \ char[capacity];\n  }\n\n  /** Creates a new {@link CharsRef} initialized with\
+    \ the given array, offset and length */\n  public CharsRef(char[] chars, int offset,\
+    \ int length) {\n    this.chars = chars;\n    this.offset = offset;\n    this.length\
+    \ = length;\n    assert isValid();\n  }\n\n  /** Creates a new {@link CharsRef}\
+    \ initialized with the given Strings character array */\n  public CharsRef(String\
+    \ string) {\n    this.chars = string.toCharArray();\n    this.offset = 0;\n  \
+    \  this.length = chars.length;\n  }\n\n  /**\n   * Returns a shallow clone of\
+    \ this instance (the underlying characters are <b>not</b> copied and\n   * will\
+    \ be shared by both the returned object and this object.\n   *\n   * @see #deepCopyOf\n\
+    \   */\n  @Override\n  public CharsRef clone() {\n    return new CharsRef(chars,\
+    \ offset, length);\n  }\n\n  @Override\n  public int hashCode() {\n    return\
+    \ stringHashCode(chars, offset, length);\n  }\n\n  /**\n   * @return the hash\
+    \ code of the given char sub-array, calculated by {@link String#hashCode()}\n\
+    \   *     specification\n   */\n  public static int stringHashCode(char[] chars,\
+    \ int offset, int length) {\n    int end = offset + length;\n    int result =\
+    \ 0;\n    for (int i = offset; i < end; i++) {\n      result = 31 * result + chars[i];\n\
+    \    }\n    return result;\n  }\n\n  @Override\n  public boolean equals(Object\
+    \ other) {\n    if (other == null) {\n      return false;\n    }\n    if (other\
+    \ instanceof CharsRef) {\n      return this.charsEquals((CharsRef) other);\n \
+    \   }\n    return false;\n  }\n\n  public boolean charsEquals(CharsRef other)\
+    \ {\n    return Arrays.equals(\n        this.chars,\n        this.offset,\n  \
+    \      this.offset + this.length,\n        other.chars,\n        other.offset,\n\
+    \        other.offset + other.length);\n  }\n\n  /** Signed int order comparison\
+    \ */\n  @Override\n  public int compareTo(CharsRef other) {\n    return Arrays.compare(\n\
+    \        this.chars,\n        this.offset,\n        this.offset + this.length,\n\
+    \        other.chars,\n        other.offset,\n        other.offset + other.length);\n\
+    \  }\n\n  @Override\n  public String toString() {\n    return new String(chars,\
+    \ offset, length);\n  }\n\n  @Override\n  public int length() {\n    return length;\n\
+    \  }\n\n  @Override\n  public char charAt(int index) {\n    // NOTE: must do a\
+    \ real check here to meet the specs of CharSequence\n    Objects.checkIndex(index,\
+    \ length);\n    return chars[offset + index];\n  }\n\n  @Override\n  public CharSequence\
+    \ subSequence(int start, int end) {\n    // NOTE: must do a real check here to\
+    \ meet the specs of CharSequence\n    Objects.checkFromToIndex(start, end, length);\n\
+    \    return new CharsRef(chars, offset + start, end - start);\n  }\n\n  /**\n\
+    \   * @deprecated This comparator is only a transition mechanism\n   */\n  @Deprecated\n\
+    \  private static final Comparator<CharsRef> utf16SortedAsUTF8SortOrder =\n  \
+    \    new UTF16SortedAsUTF8Comparator();\n\n  /**\n   * @deprecated This comparator\
+    \ is only a transition mechanism\n   */\n  @Deprecated\n  public static Comparator<CharsRef>\
+    \ getUTF16SortedAsUTF8Comparator() {\n    return utf16SortedAsUTF8SortOrder;\n\
+    \  }\n\n  /**\n   * @deprecated This comparator is only a transition mechanism\n\
+    \   */\n  @Deprecated\n  private static class UTF16SortedAsUTF8Comparator implements\
+    \ Comparator<CharsRef> {\n    // Only singleton\n    private UTF16SortedAsUTF8Comparator()\
+    \ {}\n\n    @Override\n    public int compare(CharsRef a, CharsRef b) {\n    \
+    \  int aEnd = a.offset + a.length;\n      int bEnd = b.offset + b.length;\n  \
+    \    int i = Arrays.mismatch(a.chars, a.offset, aEnd, b.chars, b.offset, bEnd);\n\
+    \n      if (i >= 0 && i < Math.min(a.length, b.length)) {\n        // http://icu-project.org/docs/papers/utf16_code_point_order.html\n\
+    \n        char aChar = a.chars[a.offset + i];\n        char bChar = b.chars[b.offset\
+    \ + i];\n        /* aChar != bChar, fix up each one if they're both in or above\
+    \ the surrogate range, then compare them */\n        if (aChar >= 0xd800 && bChar\
+    \ >= 0xd800) {\n          if (aChar >= 0xe000) {\n            aChar -= 0x800;\n\
+    \          } else {\n            aChar += 0x2000;\n          }\n\n          if\
+    \ (bChar >= 0xe000) {\n            bChar -= 0x800;\n          } else {\n     \
+    \       bChar += 0x2000;\n          }\n        }\n\n        /* now aChar and bChar\
+    \ are in code point order */\n        return (int) aChar - (int) bChar; /* int\
+    \ must be 32 bits wide */\n      }\n\n      // One is a prefix of the other, or,\
+    \ they are equal:\n      return a.length - b.length;\n    }\n  }\n\n  /**\n  \
+    \ * Creates a new CharsRef that points to a copy of the chars from <code>other</code>\n\
+    \   *\n   * <p>The returned CharsRef will have a length of other.length and an\
+    \ offset of zero.\n   */\n  public static CharsRef deepCopyOf(CharsRef other)\
+    \ {\n    return new CharsRef(\n        ArrayUtil.copyOfSubArray(other.chars, other.offset,\
+    \ other.offset + other.length),\n        0,\n        other.length);\n  }\n\n \
+    \ /** Performs internal consistency checks. Always returns true (or throws IllegalStateException)\
+    \ */\n  public boolean isValid() {\n    if (chars == null) {\n      throw new\
+    \ IllegalStateException(\"chars is null\");\n    }\n    if (length < 0) {\n  \
+    \    throw new IllegalStateException(\"length is negative: \" + length);\n   \
+    \ }\n    if (length > chars.length) {\n      throw new IllegalStateException(\n\
+    \          \"length is out of bounds: \" + length + \",chars.length=\" + chars.length);\n\
+    \    }\n    if (offset < 0) {\n      throw new IllegalStateException(\"offset\
+    \ is negative: \" + offset);\n    }\n    if (offset > chars.length) {\n      throw\
+    \ new IllegalStateException(\n          \"offset out of bounds: \" + offset +\
+    \ \",chars.length=\" + chars.length);\n    }\n    if (offset + length < 0) {\n\
+    \      throw new IllegalStateException(\n          \"offset+length is negative:\
+    \ offset=\" + offset + \",length=\" + length);\n    }\n    if (offset + length\
+    \ > chars.length) {\n      throw new IllegalStateException(\n          \"offset+length\
+    \ out of bounds: offset=\"\n              + offset\n              + \",length=\"\
+    \n              + length\n              + \",chars.length=\"\n              +\
+    \ chars.length);\n    }\n    return true;\n  }\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: empty.txt\n\nOutput the complete test file,\
+    \ code only, no explanations.\n### Time\nCurrent time: 2025-04-11 03:42:36\n"
+  role: user
