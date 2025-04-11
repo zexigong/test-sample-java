@@ -1,0 +1,40 @@
+entries:
+  - test_file: jfreechart\AxisLocationTest.java\AxisLocationTest.java
+    test_display: src/test/java/org/jfree/chart/axis/AxisLocationTest.java
+    source_display: src/main/java/org/jfree/chart/axis/AxisLocation.java
+
+  - test_file: jfreechart\HMSNumberFormatTest.java\HMSNumberFormatTest.java
+    test_display: src/test/java/org/jfree/chart/text/format/HMSNumberFormatTest.java
+    source_display: src/main/java/org/jfree/chart/text/format/HMSNumberFormat.java
+
+  - test_file: jfreechart\LogFormatTest.java\LogFormatTest.java
+    test_display: src/test/java/org/jfree/chart/text/format/LogFormatTest.java
+    source_display: src/main/java/org/jfree/chart/text/format/LogFormat.java
+
+  - test_file: jfreechart\RelativeDateFormatTest.java\RelativeDateFormatTest.java
+    test_display: src/test/java/org/jfree/chart/text/format/RelativeDateFormatTest.java
+    source_display: src/main/java/org/jfree/chart/text/format/RelativeDateFormat.java
+
+  - test_file: jfreechart\CategoryItemEntityTest.java\CategoryItemEntityTest.java
+    test_display: src/test/java/org/jfree/chart/entity/CategoryItemEntityTest.java
+    source_display: src/main/java/org/jfree/chart/entity/CategoryItemEntity.java
+
+  - test_file: jfreechart\CloneUtilsTest.java\CloneUtilsTest.java
+    test_display: src/test/java/org/jfree/chart/internal/CloneUtilsTest.java
+    source_display: src/main/java/org/jfree/chart/internal/CloneUtils.java
+
+  - test_file: jfreechart\HashUtilsTest.java\HashUtilsTest.java
+    test_display: src/test/java/org/jfree/chart/internal/HashUtilsTest.java
+    source_display: src/main/java/org/jfree/chart/internal/HashUtils.java
+
+  - test_file: jfreechart\LineUtilsTest.java\LineUtilsTest.java
+    test_display: src/test/java/org/jfree/chart/internal/LineUtilsTest.java
+    source_display: src/main/java/org/jfree/chart/internal/LineUtils.java
+
+  - test_file: jfreechart\SerialUtilsTest.java\SerialUtilsTest.java
+    test_display: src/test/java/org/jfree/chart/internal/SerialUtilsTest.java
+    source_display: src/main/java/org/jfree/chart/internal/SerialUtils.java
+
+  - test_file: jfreechart\ShapeUtilsTest.java\ShapeUtilsTest.java
+    test_display: src/test/java/org/jfree/chart/internal/ShapeUtilsTest.java
+    source_display: src/main/java/org/jfree/chart/internal/ShapeUtils.java

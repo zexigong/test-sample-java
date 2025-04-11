@@ -49,10 +49,10 @@ def organize_files(project_name, file_info):
 if __name__ == "__main__":
     # Example input: Replace with your filenames and GitHub raw URLs
     project_files = {
-        "kafka": {
+        "jfreechart": {
             "test_to_source": {
-                "https://raw.githubusercontent.com/apache/kafka/refs/heads/trunk/clients/src/test/java/org/apache/kafka/common/utils/ChecksumsTest.java": [
-                    "https://raw.githubusercontent.com/apache/kafka/refs/heads/trunk/clients/src/main/java/org/apache/kafka/common/utils/Checksums.java",
+                "https://raw.githubusercontent.com/jfree/jfreechart/refs/heads/master/src/test/java/org/jfree/chart/internal/ShapeUtilsTest.java": [
+                    "https://raw.githubusercontent.com/jfree/jfreechart/refs/heads/master/src/main/java/org/jfree/chart/internal/ShapeUtils.java",
                     # "https://raw.githubusercontent.com/se2p/pynguin/refs/heads/main/tests/fixtures/programgraph/whileloop.py",
 
 
@@ -61,8 +61,8 @@ if __name__ == "__main__":
                 ],
             },
             "dependent_files": [
-                # "https://raw.githubusercontent.com/apache/kafka/refs/heads/trunk/clients/src/main/java/org/apache/kafka/common/internals/KafkaFutureImpl.java",
-                # "https://raw.githubusercontent.com/elastic/elasticsearch/refs/heads/main/server/src/main/java/org/elasticsearch/Build.java",
+                # "https://raw.githubusercontent.com/jfree/jfreechart/refs/heads/master/src/main/java/org/jfree/chart/internal/Args.java",
+                # "https://raw.githubusercontent.com/jfree/jfreechart/refs/heads/master/src/main/java/org/jfree/chart/api/RectangleAnchor.java",
                 # "https://raw.githubusercontent.com/google/guava/refs/heads/master/guava/src/com/google/common/base/Preconditions.java",
                 # "https://raw.githubusercontent.com/pyinstaller/pyinstaller/refs/heads/develop/PyInstaller/exceptions.py",
                 # "https://raw.githubusercontent.com/pyinstaller/pyinstaller/refs/heads/develop/PyInstaller/config.py",

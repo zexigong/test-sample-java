@@ -1,0 +1,40 @@
+entries:
+  - test_file: checkstyle\AbstractCheckTest.java\AbstractCheckTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/AbstractCheckTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/AbstractCheck.java
+
+  - test_file: checkstyle\AbstractFileSetCheckTest.java\AbstractFileSetCheckTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/AbstractFileSetCheckTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/AbstractFileSetCheck.java
+
+  - test_file: checkstyle\AbstractViolationReporterTest.java\AbstractViolationReporterTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/AbstractViolationReporterTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/AbstractViolationReporter.java
+
+  - test_file: checkstyle\AuditEventTest.java\AuditEventTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/AuditEventTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/AuditEvent.java
+
+  - test_file: checkstyle\BeforeExecutionFileFilterSetTest.java\BeforeExecutionFileFilterSetTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/BeforeExecutionFileFilterSetTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/BeforeExecutionFileFilterSet.java
+
+  - test_file: checkstyle\CommentTest.java\CommentTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/CommentTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/Comment.java
+
+  - test_file: checkstyle\FileSetCheckTest.java\FileSetCheckTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/FileSetCheckTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/FileSetCheck.java
+
+  - test_file: checkstyle\FileTextTest.java\FileTextTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/FileTextTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/FileText.java
+
+  - test_file: checkstyle\FilterSetTest.java\FilterSetTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/FilterSetTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/FilterSet.java
+
+  - test_file: checkstyle\FullIdentTest.java\FullIdentTest.java
+    test_display: src/test/java/com/puppycrawl/tools/checkstyle/api/FullIdentTest.java
+    source_display: src/main/java/com/puppycrawl/tools/checkstyle/api/FullIdent.java
