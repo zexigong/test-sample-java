@@ -1,0 +1,45 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/FilterSet.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/FilterSetTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\nimport java.util.Collections;\n\
+    import java.util.HashSet;\nimport java.util.Set;\n\n/**\n * A filter set applies\
+    \ filters to AuditEvents.\n * If a filter in the set rejects an AuditEvent, then\
+    \ the\n * AuditEvent is rejected. Otherwise, the AuditEvent is accepted.\n */\n\
+    public class FilterSet\n    implements Filter {\n\n    /** Filter set. */\n  \
+    \  private final Set<Filter> filters = new HashSet<>();\n\n    /**\n     * Adds\
+    \ a Filter to the set.\n     *\n     * @param filter the Filter to add.\n    \
+    \ */\n    public void addFilter(Filter filter) {\n        filters.add(filter);\n\
+    \    }\n\n    /**\n     * Removes filter.\n     *\n     * @param filter filter\
+    \ to remove.\n     */\n    public void removeFilter(Filter filter) {\n       \
+    \ filters.remove(filter);\n    }\n\n    /**\n     * Returns the Filters of the\
+    \ filter set.\n     *\n     * @return the Filters of the filter set.\n     */\n\
+    \    public Set<Filter> getFilters() {\n        return Collections.unmodifiableSet(filters);\n\
+    \    }\n\n    @Override\n    public String toString() {\n        return filters.toString();\n\
+    \    }\n\n    @Override\n    public boolean accept(AuditEvent event) {\n     \
+    \   boolean result = true;\n        for (Filter filter : filters) {\n        \
+    \    if (!filter.accept(event)) {\n                result = false;\n         \
+    \       break;\n            }\n        }\n        return result;\n    }\n\n  \
+    \  /** Clears the FilterSet. */\n    public void clear() {\n        filters.clear();\n\
+    \    }\n\n}\n\n### Source File Dependency Files Content\n### Dependency File:\
+    \ empty.txt\n\nOutput the complete test file, code only, no explanations.\n###\
+    \ Time\nCurrent time: 2025-04-11 14:26:18\n"
+  role: user

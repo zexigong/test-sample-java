@@ -2,188 +2,113 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
+
 package org.mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.openMocks;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.internal.matchers.CapturingMatcher;
-import org.mockito.internal.util.Primitives;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-@MockitoSettings(strictness = Strictness.STRICT_STUBS)
-public class ArgumentCaptorTest {
-
-    @BeforeEach
-    public void initMocks() {
-        openMocks(this);
-    }
+class ArgumentCaptorTest {
 
     @Test
-    public void shouldCapturePrimitive() {
-        ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(int.class);
+    void shouldCaptureVarargs() {
+        // given
+        var repository = mock(UserRepository.class);
+        var service = new UserService(repository);
 
-        assertThat(Primitives.isPrimitiveOrWrapper(captor.getCaptorType())).isTrue();
-    }
-
-    @Test
-    public void shouldCapturePrimitiveWrapper() {
-        ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
-
-        assertThat(Primitives.isPrimitiveOrWrapper(captor.getCaptorType())).isTrue();
-    }
-
-    @Test
-    public void shouldCaptureRawClass() {
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-
-        assertThat(captor.getCaptorType()).isEqualTo(String.class);
-    }
-
-    @Test
-    public void shouldCaptureGenericClass() {
-        ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
-
-        assertThat(captor.getCaptorType()).isEqualTo(List.class);
-    }
-
-    @Test
-    public void shouldCapturePrimitiveWithVarArgs() {
-        ArgumentCaptor<Integer> captor = ArgumentCaptor.captor();
-
-        assertThat(Primitives.isPrimitiveOrWrapper(captor.getCaptorType())).isTrue();
-    }
-
-    @Test
-    public void shouldCapturePrimitiveWrapperWithVarArgs() {
-        ArgumentCaptor<Integer> captor = ArgumentCaptor.captor();
-
-        assertThat(Primitives.isPrimitiveOrWrapper(captor.getCaptorType())).isTrue();
-    }
-
-    @Test
-    public void shouldCaptureRawClassWithVarArgs() {
-        ArgumentCaptor<String> captor = ArgumentCaptor.captor();
-
-        assertThat(captor.getCaptorType()).isEqualTo(String.class);
-    }
-
-    @Test
-    public void shouldCaptureGenericClassWithVarArgs() {
-        ArgumentCaptor<List<String>> captor = ArgumentCaptor.captor();
-
-        assertThat(captor.getCaptorType()).isEqualTo(List.class);
-    }
-
-    @Test
-    public void shouldCaptureGenericTypeWithVarArgs() {
-        // Given
-        UserRepository repository = Mockito.mock();
-        UserService service = new UserService(repository);
-
-        Map<String, User> expectedUsers =
+        var expectedUsers =
                 Map.of("12345", new User("12345", "Bob"), "45678", new User("45678", "Dave"));
 
-        ArgumentCaptor<Map<String, User>> captor = ArgumentCaptor.captor();
+        var captor = ArgumentCaptor.<Map<String, User>>forClass(Map.class);
 
         doNothing().when(repository).storeUsers(captor.capture());
 
-        // When
-        service.createUsers(List.of(new User("12345", "Bob"), new User("45678", "Dave")));
+        // when
+        service.createUsers(
+                new User[] {new User("12345", "Bob"), new User("45678", "Dave")});
 
-        // Then
-        Map<String, User> actualUsers = captor.getValue();
+        // then
+        var actualUsers = captor.getValue();
 
-        assertThat(expectedUsers).isEqualTo(actualUsers);
+        assertThat(actualUsers).isEqualTo(expectedUsers);
     }
 
     @Test
-    public void shouldThrowIllegalArgumentExceptionWhenUsingCaptorWithVarArgs() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> ArgumentCaptor.captor(1));
+    void shouldCaptureVarargsUsingCaptor() {
+        // given
+        var repository = mock(UserRepository.class);
+        var service = new UserService(repository);
+
+        var expectedUsers =
+                Map.of("12345", new User("12345", "Bob"), "45678", new User("45678", "Dave"));
+
+        var captor = ArgumentCaptor.captor();
+
+        doNothing().when(repository).storeUsers(captor.capture());
+
+        // when
+        service.createUsers(
+                new User[] {new User("12345", "Bob"), new User("45678", "Dave")});
+
+        // then
+        var actualUsers = captor.getValue();
+
+        assertThat(actualUsers).isEqualTo(expectedUsers);
     }
 
     @Test
-    public void shouldCaptureAllValues() {
-        // Given
-        UserRepository repository = Mockito.mock();
-        UserService service = new UserService(repository);
+    void shouldCaptureVarargsUsingCaptorWithNestedGenericTypes() {
+        // given
+        var repository = mock(UserRepository.class);
+        var service = new UserService(repository);
 
-        List<User> expectedUsers =
-                List.of(new User("12345", "Bob"), new User("45678", "Dave"));
+        var expectedUsers =
+                Map.of("12345", new User("12345", "Bob"), "45678", new User("45678", "Dave"));
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.captor();
+        var captor = ArgumentCaptor.<Map<String, User>>captor();
 
-        doNothing().when(repository).storeUser(captor.capture());
+        doNothing().when(repository).storeUsers(captor.capture());
 
-        // When
-        service.createUsers(expectedUsers);
+        // when
+        service.createUsers(
+                new User[] {new User("12345", "Bob"), new User("45678", "Dave")});
 
-        // Then
-        List<User> actualUsers = captor.getAllValues();
+        // then
+        var actualUsers = captor.getValue();
 
-        assertThat(expectedUsers).isEqualTo(actualUsers);
+        assertThat(actualUsers).isEqualTo(expectedUsers);
     }
 
     @Test
-    public void shouldCaptureAllValuesWithMultipleInvocations() {
-        // Given
-        UserRepository repository = Mockito.mock();
-        UserService service = new UserService(repository);
+    void shouldNotAcceptAnyArgumentsInCaptor() {
+        // given
+        var repository = mock(UserRepository.class);
+        var service = new UserService(repository);
 
-        List<User> expectedUsers =
-                List.of(new User("12345", "Bob"), new User("45678", "Dave"));
+        var expectedUsers =
+                Map.of("12345", new User("12345", "Bob"), "45678", new User("45678", "Dave"));
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.captor();
-
-        doNothing().when(repository).storeUser(captor.capture());
-
-        // When
-        service.createUsers(List.of(new User("12345", "Bob")));
-        service.createUsers(List.of(new User("45678", "Dave")));
-
-        // Then
-        List<User> actualUsers = captor.getAllValues();
-
-        assertThat(expectedUsers).isEqualTo(actualUsers);
+        assertThatIllegalArgumentException()
+                // when
+                .isThrownBy(() -> ArgumentCaptor.captor(Map.of("12345", new User("12345", "Bob"))))
+                // then
+                .withMessage("Do not provide any arguments to the 'captor' call");
     }
 
-    private interface UserRepository {
-
-        void storeUser(User user);
-
-        void storeUsers(Map<String, User> users);
-    }
-
-    private static class UserService {
-
-        private final UserRepository repository;
-
-        public UserService(UserRepository repository) {
-            this.repository = repository;
-        }
-
-        public void createUsers(List<User> users) {
-            users.forEach(user -> repository.storeUser(user));
-        }
-    }
-
-    private static class User {
-
+    static class User {
         private final String id;
-
         private final String name;
 
-        public User(String id, String name) {
+        User(String id, String name) {
             this.id = id;
             this.name = name;
         }
@@ -197,22 +122,51 @@ public class ArgumentCaptorTest {
         }
 
         @Override
-        public int hashCode() {
-            return id.hashCode();
-        }
-
-        @Override
         public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
             if (this == obj) {
                 return true;
             }
-            if (obj instanceof User) {
-                return id.equals(((User) obj).id);
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
             }
-            return false;
+            var other = (User) obj;
+            return id.equals(other.id) && name.equals(other.name);
+        }
+
+        @Override
+        public int hashCode() {
+            var result = id.hashCode();
+            result = 31 * result + name.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    static class UserRepository {
+        private final Map<String, User> users = new ConcurrentHashMap<>();
+
+        void storeUsers(Map<String, User> users) {
+            this.users.putAll(users);
+        }
+    }
+
+    static class UserService {
+        private final UserRepository repository;
+
+        UserService(UserRepository repository) {
+            this.repository = repository;
+        }
+
+        void createUsers(User... users) {
+            var userMap = new HashMap<String, User>();
+            for (User user : users) {
+                userMap.put(user.getId(), user);
+            }
+            repository.storeUsers(userMap);
         }
     }
 }

@@ -5,80 +5,74 @@
 package org.mockito.internal.matchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.internal.matchers.text.MatchersPrinter.toString;
+import static org.mockito.internal.matchers.text.MatchersPrinter.extending;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 
-class AndTest {
+public class AndTest {
 
     @Test
-    void shouldNotHaveTypesWhenNoTypeMatchers() {
-        assertThat(new And(new Equals("one"), new Equals("two")).type()).isEqualTo(Void.class);
+    void shouldMatch() {
+        ArgumentMatcher<?> m = new And(new InstanceOf(Integer.class), new InstanceOf(Integer.class));
+        assertThat(m.matches(100)).isTrue();
     }
 
     @Test
-    void shouldReturnTypeWhenOneTypeMatcher() {
-        assertThat(new And(new TypeSafeMatcher<String>() {
-            @Override
-            public boolean matchesSafely(String item) {
-                return false;
-            }
-        }, new Equals("two")).type()).isEqualTo(String.class);
+    void shouldNotMatch() {
+        ArgumentMatcher<?> m = new And(new InstanceOf(Integer.class), new InstanceOf(Double.class));
+        assertThat(m.matches(100)).isFalse();
     }
 
     @Test
-    void shouldReturnTypeWhenTwoTypeMatchers() {
-        assertThat(new And(new TypeSafeMatcher<String>() {
-            @Override
-            public boolean matchesSafely(String item) {
-                return false;
-            }
-        }, new TypeSafeMatcher<CharSequence>() {
-            @Override
-            public boolean matchesSafely(CharSequence item) {
-                return false;
-            }
-        }).type()).isEqualTo(CharSequence.class);
+    void shouldPrint() {
+        ArgumentMatcher<?> m = new And(new InstanceOf(Integer.class), new InstanceOf(Integer.class));
+        assertThat(m.toString()).isEqualTo("and(isA(java.lang.Integer), isA(java.lang.Integer))");
     }
 
     @Test
-    void shouldNeverReturnVoidWhenMatcherWithVoidType() {
-        assertThat(new And(new TypeSafeMatcher<Void>() {
-            @Override
-            public boolean matchesSafely(Void item) {
-                return false;
-            }
-        }, new TypeSafeMatcher<String>() {
-            @Override
-            public boolean matchesSafely(String item) {
-                return false;
-            }
-        }).type()).isEqualTo(String.class);
+    void matchesWhenBothMatchersAreOfTheSameType() {
+        ArgumentMatcher<Integer> isInteger = new InstanceOf<>(Integer.class);
+        And and = new And(isInteger, isInteger);
+
+        assertThat(and.type()).isEqualTo(Integer.class);
     }
 
     @Test
-    void shouldNotReturnVoidWhenMatcherWithVoidType() {
-        assertThat(new And(new TypeSafeMatcher<Void>() {
-            @Override
-            public boolean matchesSafely(Void item) {
-                return false;
-            }
-        }, new Equals("two")).type()).isEqualTo(Void.class);
+    void matchesWhenOneMatcherIsASuperType() {
+        ArgumentMatcher<Number> isNumber = new InstanceOf<>(Number.class);
+        ArgumentMatcher<Integer> isInteger = new InstanceOf<>(Integer.class);
+        And and = new And(isNumber, isInteger);
+
+        assertThat(and.type()).isEqualTo(Number.class);
     }
 
     @Test
-    void shouldNotReturnVoidWhenMatcherWithVoidTypeIsSecond() {
-        assertThat(new And(new Equals("two"), new TypeSafeMatcher<Void>() {
-            @Override
-            public boolean matchesSafely(Void item) {
-                return false;
-            }
-        }).type()).isEqualTo(Void.class);
+    void matchesWhenOneMatcherIsASubType() {
+        ArgumentMatcher<Number> isNumber = new InstanceOf<>(Number.class);
+        ArgumentMatcher<Integer> isInteger = new InstanceOf<>(Integer.class);
+        And and = new And(isInteger, isNumber);
+
+        assertThat(and.type()).isEqualTo(Number.class);
     }
 
     @Test
-    void shouldPrintAnd() {
-        And and = new And(new Equals("one"), new Equals("two"));
-        assertThat(toString(and)).isEqualTo("and(\"one\", \"two\")");
+    void doesNotMatchWhenMatchersAreNotCovariant() {
+        ArgumentMatcher<Number> isNumber = new InstanceOf<>(Number.class);
+        ArgumentMatcher<List> isList = new InstanceOf<>(List.class);
+        And and = new And(isNumber, isList);
+
+        assertThat(and.type()).isEqualTo(ArgumentMatcher.super.type());
+    }
+
+    @Test
+    void matchesWhenBothMatchersAreOfTheSameTypeAndHaveDifferentTypeExtending() {
+        ArgumentMatcher<Integer> isInteger1 = new InstanceOf<>(Integer.class, extending("1"));
+        ArgumentMatcher<Integer> isInteger2 = new InstanceOf<>(Integer.class, extending("2"));
+        And and = new And(isInteger1, isInteger2);
+
+        assertThat(and.type()).isEqualTo(Integer.class);
     }
 }

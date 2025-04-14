@@ -1,0 +1,395 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/AbstractFileSetCheck.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/AbstractFileSetCheckTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\nimport java.io.File;\nimport\
+    \ java.util.Arrays;\nimport java.util.SortedSet;\nimport java.util.TreeSet;\n\n\
+    import com.puppycrawl.tools.checkstyle.utils.CommonUtil;\n\n/**\n * Provides common\
+    \ functionality for many FileSetChecks.\n *\n * @noinspection NoopMethodInAbstractClass\n\
+    \ * @noinspectionreason NoopMethodInAbstractClass - we allow each\n *      check\
+    \ to define these methods, as needed. They\n *      should be overridden only\
+    \ by demand in subclasses\n */\npublic abstract class AbstractFileSetCheck\n \
+    \   extends AbstractViolationReporter\n    implements FileSetCheck {\n\n    /**\
+    \ The extension separator. */\n    private static final String EXTENSION_SEPARATOR\
+    \ = \".\";\n\n    /**\n     * The check context.\n     *\n     * @noinspection\
+    \ ThreadLocalNotStaticFinal\n     * @noinspectionreason ThreadLocalNotStaticFinal\
+    \ - static context is\n     *      problematic for multithreading\n     */\n \
+    \   private final ThreadLocal<FileContext> context = ThreadLocal.withInitial(FileContext::new);\n\
+    \n    /** The dispatcher errors are fired to. */\n    private MessageDispatcher\
+    \ messageDispatcher;\n\n    /**\n     * Specify the file extensions of the files\
+    \ to process.\n     * Default is uninitialized as the value is inherited from\
+    \ the parent module.\n     */\n    private String[] fileExtensions;\n\n    /**\n\
+    \     * The tab width for column reporting.\n     * Default is uninitialized as\
+    \ the value is inherited from the parent module.\n     */\n    private int tabWidth;\n\
+    \n    /**\n     * Called to process a file that matches the specified file extensions.\n\
+    \     *\n     * @param file the file to be processed\n     * @param fileText the\
+    \ contents of the file.\n     * @throws CheckstyleException if error condition\
+    \ within Checkstyle occurs.\n     */\n    protected abstract void processFiltered(File\
+    \ file, FileText fileText)\n            throws CheckstyleException;\n\n    @Override\n\
+    \    public void init() {\n        // No code by default, should be overridden\
+    \ only by demand at subclasses\n    }\n\n    @Override\n    public void destroy()\
+    \ {\n        context.remove();\n    }\n\n    @Override\n    public void beginProcessing(String\
+    \ charset) {\n        // No code by default, should be overridden only by demand\
+    \ at subclasses\n    }\n\n    @Override\n    public final SortedSet<Violation>\
+    \ process(File file, FileText fileText)\n            throws CheckstyleException\
+    \ {\n        final FileContext fileContext = context.get();\n        fileContext.fileContents\
+    \ = new FileContents(fileText);\n        fileContext.violations.clear();\n   \
+    \     // Process only what interested in\n        if (CommonUtil.matchesFileExtension(file,\
+    \ fileExtensions)) {\n            processFiltered(file, fileText);\n        }\n\
+    \        final SortedSet<Violation> result = new TreeSet<>(fileContext.violations);\n\
+    \        fileContext.violations.clear();\n        return result;\n    }\n\n  \
+    \  @Override\n    public void finishProcessing() {\n        // No code by default,\
+    \ should be overridden only by demand at subclasses\n    }\n\n    @Override\n\
+    \    public final void setMessageDispatcher(MessageDispatcher messageDispatcher)\
+    \ {\n        this.messageDispatcher = messageDispatcher;\n    }\n\n    /**\n \
+    \    * A message dispatcher is used to fire violations to\n     * interested audit\
+    \ listeners.\n     *\n     * @return the current MessageDispatcher.\n     */\n\
+    \    protected final MessageDispatcher getMessageDispatcher() {\n        return\
+    \ messageDispatcher;\n    }\n\n    /**\n     * Returns the sorted set of {@link\
+    \ Violation}.\n     *\n     * @return the sorted set of {@link Violation}.\n \
+    \    */\n    public SortedSet<Violation> getViolations() {\n        return new\
+    \ TreeSet<>(context.get().violations);\n    }\n\n    /**\n     * Set the file\
+    \ contents associated with the tree.\n     *\n     * @param contents the manager\n\
+    \     */\n    public final void setFileContents(FileContents contents) {\n   \
+    \     context.get().fileContents = contents;\n    }\n\n    /**\n     * Returns\
+    \ the file contents associated with the file.\n     *\n     * @return the file\
+    \ contents\n     */\n    protected final FileContents getFileContents() {\n  \
+    \      return context.get().fileContents;\n    }\n\n    /**\n     * Makes copy\
+    \ of file extensions and returns them.\n     *\n     * @return file extensions\
+    \ that identify the files that pass the\n     *     filter of this FileSetCheck.\n\
+    \     */\n    public String[] getFileExtensions() {\n        return Arrays.copyOf(fileExtensions,\
+    \ fileExtensions.length);\n    }\n\n    /**\n     * Setter to specify the file\
+    \ extensions of the files to process.\n     *\n     * @param extensions the set\
+    \ of file extensions. A missing\n     *         initial '.' character of an extension\
+    \ is automatically added.\n     * @throws IllegalArgumentException is argument\
+    \ is null\n     */\n    public final void setFileExtensions(String... extensions)\
+    \ {\n        if (extensions == null) {\n            throw new IllegalArgumentException(\"\
+    Extensions array can not be null\");\n        }\n\n        fileExtensions = new\
+    \ String[extensions.length];\n        for (int i = 0; i < extensions.length; i++)\
+    \ {\n            final String extension = extensions[i];\n            if (extension.startsWith(EXTENSION_SEPARATOR))\
+    \ {\n                fileExtensions[i] = extension;\n            }\n         \
+    \   else {\n                fileExtensions[i] = EXTENSION_SEPARATOR + extension;\n\
+    \            }\n        }\n    }\n\n    /**\n     * Get tab width to report audit\
+    \ events with.\n     *\n     * @return the tab width to report audit events with\n\
+    \     */\n    protected final int getTabWidth() {\n        return tabWidth;\n\
+    \    }\n\n    /**\n     * Set the tab width to report audit events with.\n   \
+    \  *\n     * @param tabWidth an {@code int} value\n     */\n    public final void\
+    \ setTabWidth(int tabWidth) {\n        this.tabWidth = tabWidth;\n    }\n\n  \
+    \  /**\n     * Adds the sorted set of {@link Violation} to the message collector.\n\
+    \     *\n     * @param violations the sorted set of {@link Violation}.\n     */\n\
+    \    protected void addViolations(SortedSet<Violation> violations) {\n       \
+    \ context.get().violations.addAll(violations);\n    }\n\n    @Override\n    public\
+    \ final void log(int line, String key, Object... args) {\n        context.get().violations.add(\n\
+    \                new Violation(line,\n                        getMessageBundle(),\n\
+    \                        key,\n                        args,\n               \
+    \         getSeverityLevel(),\n                        getId(),\n            \
+    \            getClass(),\n                        getCustomMessages().get(key)));\n\
+    \    }\n\n    @Override\n    public final void log(int lineNo, int colNo, String\
+    \ key,\n            Object... args) {\n        final FileContext fileContext =\
+    \ context.get();\n        final int col = 1 + CommonUtil.lengthExpandedTabs(\n\
+    \                fileContext.fileContents.getLine(lineNo - 1), colNo, tabWidth);\n\
+    \        fileContext.violations.add(\n                new Violation(lineNo,\n\
+    \                        col,\n                        getMessageBundle(),\n \
+    \                       key,\n                        args,\n                \
+    \        getSeverityLevel(),\n                        getId(),\n             \
+    \           getClass(),\n                        getCustomMessages().get(key)));\n\
+    \    }\n\n    /**\n     * Notify all listeners about the errors in a file.\n \
+    \    * Calls {@code MessageDispatcher.fireErrors()} with\n     * all logged errors\
+    \ and then clears errors' list.\n     *\n     * @param fileName the audited file\n\
+    \     */\n    protected final void fireErrors(String fileName) {\n        final\
+    \ FileContext fileContext = context.get();\n        final SortedSet<Violation>\
+    \ errors = new TreeSet<>(fileContext.violations);\n        fileContext.violations.clear();\n\
+    \        messageDispatcher.fireErrors(fileName, errors);\n    }\n\n    /**\n \
+    \    * The actual context holder.\n     */\n    private static final class FileContext\
+    \ {\n\n        /** The sorted set for collecting violations. */\n        private\
+    \ final SortedSet<Violation> violations = new TreeSet<>();\n\n        /** The\
+    \ current file contents. */\n        private FileContents fileContents;\n\n  \
+    \  }\n\n}\n\n### Source File Dependency Files Content\n### Dependency File: CommonUtil.java\n\
+    ///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.utils;\n\nimport java.io.Closeable;\n\
+    import java.io.File;\nimport java.io.IOException;\nimport java.lang.reflect.Constructor;\n\
+    import java.lang.reflect.InvocationTargetException;\nimport java.net.MalformedURLException;\n\
+    import java.net.URI;\nimport java.net.URISyntaxException;\nimport java.net.URL;\n\
+    import java.nio.file.Path;\nimport java.nio.file.Paths;\nimport java.util.BitSet;\n\
+    import java.util.Objects;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\
+    import java.util.regex.PatternSyntaxException;\n\nimport org.xml.sax.InputSource;\n\
+    \nimport com.puppycrawl.tools.checkstyle.api.CheckstyleException;\n\n/**\n * Contains\
+    \ utility methods.\n *\n */\npublic final class CommonUtil {\n\n    /** Default\
+    \ tab width for column reporting. */\n    public static final int DEFAULT_TAB_WIDTH\
+    \ = 8;\n\n    /** For cases where no tokens should be accepted. */\n    public\
+    \ static final BitSet EMPTY_BIT_SET = new BitSet();\n    /** Copied from org.apache.commons.lang3.ArrayUtils.\
+    \ */\n    public static final String[] EMPTY_STRING_ARRAY = new String[0];\n \
+    \   /** Copied from org.apache.commons.lang3.ArrayUtils. */\n    public static\
+    \ final Integer[] EMPTY_INTEGER_OBJECT_ARRAY = new Integer[0];\n    /** Copied\
+    \ from org.apache.commons.lang3.ArrayUtils. */\n    public static final Object[]\
+    \ EMPTY_OBJECT_ARRAY = new Object[0];\n    /** Copied from org.apache.commons.lang3.ArrayUtils.\
+    \ */\n    public static final int[] EMPTY_INT_ARRAY = new int[0];\n    /** Copied\
+    \ from org.apache.commons.lang3.ArrayUtils. */\n    public static final byte[]\
+    \ EMPTY_BYTE_ARRAY = new byte[0];\n    /** Copied from org.apache.commons.lang3.ArrayUtils.\
+    \ */\n    public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];\n \
+    \   /** Pseudo URL protocol for loading from the class path. */\n    public static\
+    \ final String CLASSPATH_URL_PROTOCOL = \"classpath:\";\n\n    /** Prefix for\
+    \ the exception when unable to find resource. */\n    private static final String\
+    \ UNABLE_TO_FIND_EXCEPTION_PREFIX = \"Unable to find: \";\n\n    /** The extension\
+    \ separator. */\n    private static final String EXTENSION_SEPARATOR = \".\";\n\
+    \n    /** Stop instances being created. **/\n    private CommonUtil() {\n    }\n\
+    \n    /**\n     * Helper method to create a regular expression.\n     *\n    \
+    \ * @param pattern\n     *            the pattern to match\n     * @return a created\
+    \ regexp object\n     * @throws IllegalArgumentException\n     *             if\
+    \ unable to create Pattern object.\n     **/\n    public static Pattern createPattern(String\
+    \ pattern) {\n        return createPattern(pattern, 0);\n    }\n\n    /**\n  \
+    \   * Helper method to create a regular expression with a specific flags.\n  \
+    \   *\n     * @param pattern\n     *            the pattern to match\n     * @param\
+    \ flags\n     *            the flags to set\n     * @return a created regexp object\n\
+    \     * @throws IllegalArgumentException\n     *             if unable to create\
+    \ Pattern object.\n     **/\n    public static Pattern createPattern(String pattern,\
+    \ int flags) {\n        try {\n            return Pattern.compile(pattern, flags);\n\
+    \        }\n        catch (final PatternSyntaxException ex) {\n            throw\
+    \ new IllegalArgumentException(\n                \"Failed to initialise regular\
+    \ expression \" + pattern, ex);\n        }\n    }\n\n    /**\n     * Returns whether\
+    \ the file extension matches what we are meant to process.\n     *\n     * @param\
+    \ file\n     *            the file to be checked.\n     * @param fileExtensions\n\
+    \     *            files extensions, empty property in config makes it matches\
+    \ to all.\n     * @return whether there is a match.\n     */\n    public static\
+    \ boolean matchesFileExtension(File file, String... fileExtensions) {\n      \
+    \  boolean result = false;\n        if (fileExtensions == null || fileExtensions.length\
+    \ == 0) {\n            result = true;\n        }\n        else {\n           \
+    \ // normalize extensions so all of them have a leading dot\n            final\
+    \ String[] withDotExtensions = new String[fileExtensions.length];\n          \
+    \  for (int i = 0; i < fileExtensions.length; i++) {\n                final String\
+    \ extension = fileExtensions[i];\n                if (extension.startsWith(EXTENSION_SEPARATOR))\
+    \ {\n                    withDotExtensions[i] = extension;\n                }\n\
+    \                else {\n                    withDotExtensions[i] = EXTENSION_SEPARATOR\
+    \ + extension;\n                }\n            }\n\n            final String fileName\
+    \ = file.getName();\n            for (final String fileExtension : withDotExtensions)\
+    \ {\n                if (fileName.endsWith(fileExtension)) {\n               \
+    \     result = true;\n                    break;\n                }\n        \
+    \    }\n        }\n\n        return result;\n    }\n\n    /**\n     * Returns\
+    \ whether the specified string contains only whitespace up to the specified index.\n\
+    \     *\n     * @param index\n     *            index to check up to\n     * @param\
+    \ line\n     *            the line to check\n     * @return whether there is only\
+    \ whitespace\n     */\n    public static boolean hasWhitespaceBefore(int index,\
+    \ String line) {\n        boolean result = true;\n        for (int i = 0; i <\
+    \ index; i++) {\n            if (!Character.isWhitespace(line.charAt(i))) {\n\
+    \                result = false;\n                break;\n            }\n    \
+    \    }\n        return result;\n    }\n\n    /**\n     * Returns the length of\
+    \ a string ignoring all trailing whitespace.\n     * It is a pity that there is\
+    \ not a trim() like\n     * method that only removed the trailing whitespace.\n\
+    \     *\n     * @param line\n     *            the string to process\n     * @return\
+    \ the length of the string ignoring all trailing whitespace\n     **/\n    public\
+    \ static int lengthMinusTrailingWhitespace(String line) {\n        int len = line.length();\n\
+    \        for (int i = len - 1; i >= 0; i--) {\n            if (!Character.isWhitespace(line.charAt(i)))\
+    \ {\n                break;\n            }\n            len--;\n        }\n  \
+    \      return len;\n    }\n\n    /**\n     * Returns the length of a String prefix\
+    \ with tabs expanded.\n     * Each tab is counted as the number of characters\
+    \ is\n     * takes to jump to the next tab stop.\n     *\n     * @param inputString\n\
+    \     *            the input String\n     * @param toIdx\n     *            index\
+    \ in string (exclusive) where the calculation stops\n     * @param tabWidth\n\
+    \     *            the distance between tab stop position.\n     * @return the\
+    \ length of string.substring(0, toIdx) with tabs expanded.\n     */\n    public\
+    \ static int lengthExpandedTabs(String inputString,\n            int toIdx,\n\
+    \            int tabWidth) {\n        int len = 0;\n        for (int idx = 0;\
+    \ idx < toIdx; idx++) {\n            if (inputString.codePointAt(idx) == '\\t')\
+    \ {\n                len = (len / tabWidth + 1) * tabWidth;\n            }\n \
+    \           else {\n                len++;\n            }\n        }\n       \
+    \ return len;\n    }\n\n    /**\n     * Validates whether passed string is a valid\
+    \ pattern or not.\n     *\n     * @param pattern\n     *            string to\
+    \ validate\n     * @return true if the pattern is valid false otherwise\n    \
+    \ */\n    public static boolean isPatternValid(String pattern) {\n        boolean\
+    \ isValid = true;\n        try {\n            Pattern.compile(pattern);\n    \
+    \    }\n        catch (final PatternSyntaxException ignored) {\n            isValid\
+    \ = false;\n        }\n        return isValid;\n    }\n\n    /**\n     * Returns\
+    \ base class name from qualified name.\n     *\n     * @param type\n     *   \
+    \         the fully qualified name. Cannot be null\n     * @return the base class\
+    \ name from a fully qualified name\n     */\n    public static String baseClassName(String\
+    \ type) {\n        final int index = type.lastIndexOf('.');\n        return type.substring(index\
+    \ + 1);\n    }\n\n    /**\n     * Constructs a relative path between base directory\
+    \ and a given path.\n     *\n     * @param baseDirectory\n     *            the\
+    \ base path to which given path is relativized\n     * @param path\n     *   \
+    \         the path to relativize against base directory\n     * @return the relative\
+    \ normalized path between base directory and\n     *     path or path if base\
+    \ directory is null.\n     */\n    public static String relativizePath(final String\
+    \ baseDirectory, final String path) {\n        final String resultPath;\n    \
+    \    if (baseDirectory == null) {\n            resultPath = path;\n        }\n\
+    \        else {\n            final Path pathAbsolute = Path.of(path);\n      \
+    \      final Path pathBase = Path.of(baseDirectory);\n            resultPath =\
+    \ pathBase.relativize(pathAbsolute).toString();\n        }\n        return resultPath;\n\
+    \    }\n\n    /**\n     * Gets constructor of targetClass.\n     *\n     * @param\
+    \ <T> type of the target class object.\n     * @param targetClass\n     *    \
+    \        from which constructor is returned\n     * @param parameterTypes\n  \
+    \   *            of constructor\n     * @return constructor of targetClass\n \
+    \    * @throws IllegalStateException if any exception occurs\n     * @see Class#getConstructor(Class[])\n\
+    \     */\n    public static <T> Constructor<T> getConstructor(Class<T> targetClass,\n\
+    \                                                    Class<?>... parameterTypes)\
+    \ {\n        try {\n            return targetClass.getConstructor(parameterTypes);\n\
+    \        }\n        catch (NoSuchMethodException ex) {\n            throw new\
+    \ IllegalStateException(ex);\n        }\n    }\n\n    /**\n     * Returns new\
+    \ instance of a class.\n     *\n     * @param <T>\n     *            type of constructor\n\
+    \     * @param constructor\n     *            to invoke\n     * @param parameters\n\
+    \     *            to pass to constructor\n     * @return new instance of class\n\
+    \     * @throws IllegalStateException if any exception occurs\n     * @see Constructor#newInstance(Object...)\n\
+    \     */\n    public static <T> T invokeConstructor(Constructor<T> constructor,\
+    \ Object... parameters) {\n        try {\n            return constructor.newInstance(parameters);\n\
+    \        }\n        catch (InstantiationException | IllegalAccessException | InvocationTargetException\
+    \ ex) {\n            throw new IllegalStateException(ex);\n        }\n    }\n\n\
+    \    /**\n     * Closes a stream re-throwing IOException as IllegalStateException.\n\
+    \     *\n     * @param closeable\n     *            Closeable object\n     * @throws\
+    \ IllegalStateException when any IOException occurs\n     */\n    public static\
+    \ void close(Closeable closeable) {\n        if (closeable != null) {\n      \
+    \      try {\n                closeable.close();\n            }\n            catch\
+    \ (IOException ex) {\n                throw new IllegalStateException(\"Cannot\
+    \ close the stream\", ex);\n            }\n        }\n    }\n\n    /**\n     *\
+    \ Creates an input source from a file.\n     *\n     * @param filename name of\
+    \ the file.\n     * @return input source.\n     * @throws CheckstyleException\
+    \ if an error occurs.\n     */\n    public static InputSource sourceFromFilename(String\
+    \ filename) throws CheckstyleException {\n        // figure out if this is a File\
+    \ or a URL\n        final URI uri = getUriByFilename(filename);\n        return\
+    \ new InputSource(uri.toASCIIString());\n    }\n\n    /**\n     * Resolve the\
+    \ specified filename to a URI.\n     *\n     * @param filename name of the file\n\
+    \     * @return resolved file URI\n     * @throws CheckstyleException on failure\n\
+    \     */\n    public static URI getUriByFilename(String filename) throws CheckstyleException\
+    \ {\n        URI uri = getWebOrFileProtocolUri(filename);\n\n        if (uri ==\
+    \ null) {\n            uri = getFilepathOrClasspathUri(filename);\n        }\n\
+    \n        return uri;\n    }\n\n    /**\n     * Resolves the specified filename\
+    \ containing 'http', 'https', 'ftp',\n     * and 'file' protocols (or any RFC\
+    \ 2396 compliant URL) to a URI.\n     *\n     * @param filename name of the file\n\
+    \     * @return resolved file URI or null if URL is malformed or non-existent\n\
+    \     */\n    public static URI getWebOrFileProtocolUri(String filename) {\n \
+    \       URI uri;\n        try {\n            final URL url = new URL(filename);\n\
+    \            uri = url.toURI();\n        }\n        catch (URISyntaxException\
+    \ | MalformedURLException ignored) {\n            uri = null;\n        }\n   \
+    \     return uri;\n    }\n\n    /**\n     * Resolves the specified local filename,\
+    \ possibly with 'classpath:'\n     * protocol, to a URI.  First we attempt to\
+    \ create a new file with\n     * given filename, then attempt to load file from\
+    \ class path.\n     *\n     * @param filename name of the file\n     * @return\
+    \ resolved file URI\n     * @throws CheckstyleException on failure\n     */\n\
+    \    private static URI getFilepathOrClasspathUri(String filename) throws CheckstyleException\
+    \ {\n        final URI uri;\n        final File file = new File(filename);\n\n\
+    \        if (file.exists()) {\n            uri = file.toURI();\n        }\n  \
+    \      else {\n            final int lastIndexOfClasspathProtocol;\n         \
+    \   if (filename.lastIndexOf(CLASSPATH_URL_PROTOCOL) == 0) {\n               \
+    \ lastIndexOfClasspathProtocol = CLASSPATH_URL_PROTOCOL.length();\n          \
+    \  }\n            else {\n                lastIndexOfClasspathProtocol = 0;\n\
+    \            }\n            uri = getResourceFromClassPath(filename\n        \
+    \        .substring(lastIndexOfClasspathProtocol));\n        }\n        return\
+    \ uri;\n    }\n\n    /**\n     * Gets a resource from the classpath.\n     *\n\
+    \     * @param filename name of file\n     * @return URI of file in classpath\n\
+    \     * @throws CheckstyleException on failure\n     */\n    public static URI\
+    \ getResourceFromClassPath(String filename) throws CheckstyleException {\n   \
+    \     final URL configUrl;\n        if (filename.charAt(0) == '/') {\n       \
+    \     configUrl = getCheckstyleResource(filename);\n        }\n        else {\n\
+    \            configUrl = ClassLoader.getSystemResource(filename);\n        }\n\
+    \n        if (configUrl == null) {\n            throw new CheckstyleException(UNABLE_TO_FIND_EXCEPTION_PREFIX\
+    \ + filename);\n        }\n\n        final URI uri;\n        try {\n         \
+    \   uri = configUrl.toURI();\n        }\n        catch (final URISyntaxException\
+    \ ex) {\n            throw new CheckstyleException(UNABLE_TO_FIND_EXCEPTION_PREFIX\
+    \ + filename, ex);\n        }\n\n        return uri;\n    }\n\n    /**\n     *\
+    \ Finds a resource with a given name in the Checkstyle resource bundle.\n    \
+    \ * This method is intended only for internal use in Checkstyle tests for\n  \
+    \   * easy mocking to gain 100% coverage.\n     *\n     * @param name name of\
+    \ the desired resource\n     * @return URI of the resource\n     */\n    public\
+    \ static URL getCheckstyleResource(String name) {\n        return CommonUtil.class.getResource(name);\n\
+    \    }\n\n    /**\n     * Puts part of line, which matches regexp into given template\n\
+    \     * on positions $n where 'n' is number of matched part in line.\n     *\n\
+    \     * @param template the string to expand.\n     * @param lineToPlaceInTemplate\
+    \ contains expression which should be placed into string.\n     * @param regexp\
+    \ expression to find in comment.\n     * @return the string, based on template\
+    \ filled with given lines\n     */\n    public static String fillTemplateWithStringsByRegexp(\n\
+    \        String template, String lineToPlaceInTemplate, Pattern regexp) {\n  \
+    \      final Matcher matcher = regexp.matcher(lineToPlaceInTemplate);\n      \
+    \  String result = template;\n        if (matcher.find()) {\n            for (int\
+    \ i = 0; i <= matcher.groupCount(); i++) {\n                // $n expands comment\
+    \ match like in Pattern.subst().\n                result = result.replaceAll(\"\
+    \\\\$\" + i, matcher.group(i));\n            }\n        }\n        return result;\n\
+    \    }\n\n    /**\n     * Returns file name without extension.\n     * We do not\
+    \ use the method from Guava library to reduce Checkstyle's dependencies\n    \
+    \ * on external libraries.\n     *\n     * @param fullFilename file name with\
+    \ extension.\n     * @return file name without extension.\n     */\n    public\
+    \ static String getFileNameWithoutExtension(String fullFilename) {\n        final\
+    \ String fileName = new File(fullFilename).getName();\n        final int dotIndex\
+    \ = fileName.lastIndexOf('.');\n        final String fileNameWithoutExtension;\n\
+    \        if (dotIndex == -1) {\n            fileNameWithoutExtension = fileName;\n\
+    \        }\n        else {\n            fileNameWithoutExtension = fileName.substring(0,\
+    \ dotIndex);\n        }\n        return fileNameWithoutExtension;\n    }\n\n \
+    \   /**\n     * Returns file extension for the given file name\n     * or empty\
+    \ string if file does not have an extension.\n     * We do not use the method\
+    \ from Guava library to reduce Checkstyle's dependencies\n     * on external libraries.\n\
+    \     *\n     * @param fileNameWithExtension file name with extension.\n     *\
+    \ @return file extension for the given file name\n     *         or empty string\
+    \ if file does not have an extension.\n     */\n    public static String getFileExtension(String\
+    \ fileNameWithExtension) {\n        final String fileName = Paths.get(fileNameWithExtension).toString();\n\
+    \        final int dotIndex = fileName.lastIndexOf('.');\n        final String\
+    \ extension;\n        if (dotIndex == -1) {\n            extension = \"\";\n \
+    \       }\n        else {\n            extension = fileName.substring(dotIndex\
+    \ + 1);\n        }\n        return extension;\n    }\n\n    /**\n     * Checks\
+    \ whether the given string is a valid identifier.\n     *\n     * @param str A\
+    \ string to check.\n     * @return true when the given string contains valid identifier.\n\
+    \     */\n    public static boolean isIdentifier(String str) {\n        boolean\
+    \ isIdentifier = !str.isEmpty();\n\n        for (int i = 0; isIdentifier && i\
+    \ < str.length(); i++) {\n            if (i == 0) {\n                isIdentifier\
+    \ = Character.isJavaIdentifierStart(str.charAt(0));\n            }\n         \
+    \   else {\n                isIdentifier = Character.isJavaIdentifierPart(str.charAt(i));\n\
+    \            }\n        }\n\n        return isIdentifier;\n    }\n\n    /**\n\
+    \     * Checks whether the given string is a valid name.\n     *\n     * @param\
+    \ str A string to check.\n     * @return true when the given string contains valid\
+    \ name.\n     */\n    public static boolean isName(String str) {\n        boolean\
+    \ isName = false;\n\n        final String[] identifiers = str.split(\"\\\\.\"\
+    , -1);\n        for (String identifier : identifiers) {\n            isName =\
+    \ isIdentifier(identifier);\n            if (!isName) {\n                break;\n\
+    \            }\n        }\n\n        return isName;\n    }\n\n    /**\n     *\
+    \ Checks if the value arg is blank by either being null,\n     * empty, or contains\
+    \ only whitespace characters.\n     *\n     * @param value A string to check.\n\
+    \     * @return true if the arg is blank.\n     */\n    public static boolean\
+    \ isBlank(String value) {\n        return Objects.isNull(value)\n            \
+    \    || indexOfNonWhitespace(value) >= value.length();\n    }\n\n    /**\n   \
+    \  * Method to find the index of the first non-whitespace character in a string.\n\
+    \     *\n     * @param value the string to find the first index of a non-whitespace\
+    \ character for.\n     * @return the index of the first non-whitespace character.\n\
+    \     */\n    public static int indexOfNonWhitespace(String value) {\n       \
+    \ final int length = value.length();\n        int left = 0;\n        while (left\
+    \ < length) {\n            final int codePointAt = value.codePointAt(left);\n\
+    \            if (!Character.isWhitespace(codePointAt)) {\n                break;\n\
+    \            }\n            left += Character.charCount(codePointAt);\n      \
+    \  }\n        return left;\n    }\n\n    /**\n     * Converts the Unicode code\
+    \ point at index {@code index} to it's UTF-16\n     * representation, then checks\
+    \ if the character is whitespace. Note that the given\n     * index {@code index}\
+    \ should correspond to the location of the character\n     * to check in the string,\
+    \ not in code points.\n     *\n     * @param codePoints the array of Unicode code\
+    \ points\n     * @param index the index of the character to check\n     * @return\
+    \ true if character at {@code index} is whitespace\n     */\n    public static\
+    \ boolean isCodePointWhitespace(int[] codePoints, int index) {\n        //  We\
+    \ only need to check the first member of a surrogate pair to verify that\n   \
+    \     //  it is not whitespace.\n        final char character = Character.toChars(codePoints[index])[0];\n\
+    \        return Character.isWhitespace(character);\n    }\n\n}\n\nOutput the complete\
+    \ test file, code only, no explanations.\n### Time\nCurrent time: 2025-04-11 14:25:24\n"
+  role: user

@@ -2,40 +2,57 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
-package org.mockito.internal.matchers;
 
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
+package org.mockito.internal.matchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.api.AbstractBooleanAssert;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.mockito.internal.matchers.text.MatcherToString;
+
 public class OrTest {
-    @Test
-    public void should_match_if_either_matcher_matches() throws Exception {
-        ArgumentMatcher<Object> matcher1 = (argument) -> argument.equals("foo");
-        ArgumentMatcher<Object> matcher2 = (argument) -> argument.equals("bar");
-        Or or = new Or(matcher1, matcher2);
 
-        assertThat(or.matches("foo")).isTrue();
-        assertThat(or.matches("bar")).isTrue();
-        assertThat(or.matches("baz")).isFalse();
+    @Test
+    public void should_return_match_if_one_matcher_matches() {
+        // given
+        ArgumentMatcher<Object> first = new Any();
+        ArgumentMatcher<Object> second = new Equals(100);
+        Or matcher = new Or(first, second);
+
+        // when
+        AbstractBooleanAssert<?> booleanAssert = assertThat(matcher.matches(100));
+
+        // then
+        booleanAssert.isTrue();
     }
 
     @Test
-    public void should_describe_matcher_type() throws Exception {
-        ArgumentMatcher<Object> matcher1 = (argument) -> argument.equals("foo");
-        ArgumentMatcher<Object> matcher2 = (argument) -> argument.equals("bar");
-        Or or = new Or(matcher1, matcher2);
+    public void should_not_return_match_if_none_matcher_matches() {
+        // given
+        ArgumentMatcher<Object> first = new Equals(200);
+        ArgumentMatcher<Object> second = new Equals(100);
+        Or matcher = new Or(first, second);
 
-        assertThat(or.type()).isEqualTo(Void.class);
+        // when
+        AbstractBooleanAssert<?> booleanAssert = assertThat(matcher.matches(300));
+
+        // then
+        booleanAssert.isFalse();
     }
 
     @Test
-    public void should_describe_or() throws Exception {
-        ArgumentMatcher<Object> matcher1 = (argument) -> argument.equals("foo");
-        ArgumentMatcher<Object> matcher2 = (argument) -> argument.equals("bar");
-        Or or = new Or(matcher1, matcher2);
+    public void should_have_friendly_toString() {
+        // given
+        ArgumentMatcher<Object> first = new Equals(10);
+        ArgumentMatcher<Object> second = new Equals(20);
+        Or matcher = new Or(first, second);
 
-        assertThat(or.toString()).isEqualTo("or(" + matcher1 + ", " + matcher2 + ")");
+        // when
+        String description = MatcherToString.toString(matcher);
+
+        // then
+        assertThat(description).isEqualTo("or(10, 20)");
     }
 }

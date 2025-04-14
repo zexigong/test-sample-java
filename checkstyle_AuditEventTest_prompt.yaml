@@ -1,0 +1,78 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/AuditEvent.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/AuditEventTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\n/**\n * Raw event for audit.\n\
+    \ *\n * <p>\n * <i>\n * I'm not very satisfied about the design of this event\
+    \ since there are\n * optional methods that will return null in most of the case.\
+    \ This will\n * need some work to clean it up especially if we want to introduce\n\
+    \ * a more sequential reporting action rather than a packet\n * reporting. This\
+    \ will allow for example to follow the process quickly\n * in an interface or\
+    \ a servlet (yep, that's cool to run a check via\n * a web interface in a source\
+    \ repository ;-)\n * </i>\n * </p>\n *\n * @see AuditListener\n */\npublic final\
+    \ class AuditEvent {\n\n    /** The object on which the Event initially occurred.\
+    \ */\n    private final Object source;\n    /** Filename event associated with.\
+    \ **/\n    private final String fileName;\n    /** Violation associated with the\
+    \ event. **/\n    private final Violation violation;\n\n    /**\n     * Creates\
+    \ a new instance.\n     *\n     * @param source the object that created the event\n\
+    \     */\n    public AuditEvent(Object source) {\n        this(source, null);\n\
+    \    }\n\n    /**\n     * Creates a new {@code AuditEvent} instance.\n     *\n\
+    \     * @param src source of the event\n     * @param fileName file associated\
+    \ with the event\n     */\n    public AuditEvent(Object src, String fileName)\
+    \ {\n        this(src, fileName, null);\n    }\n\n    /**\n     * Creates a new\
+    \ {@code AuditEvent} instance.\n     *\n     * @param src source of the event\n\
+    \     * @param fileName file associated with the event\n     * @param violation\
+    \ the actual violation\n     * @throws IllegalArgumentException if {@code src}\
+    \ is {@code null}.\n     */\n    public AuditEvent(Object src, String fileName,\
+    \ Violation violation) {\n        if (src == null) {\n            throw new IllegalArgumentException(\"\
+    null source\");\n        }\n\n        source = src;\n        this.fileName = fileName;\n\
+    \        this.violation = violation;\n    }\n\n    /**\n     * The object on which\
+    \ the Event initially occurred.\n     *\n     * @return the object on which the\
+    \ Event initially occurred\n     */\n    public Object getSource() {\n       \
+    \ return source;\n    }\n\n    /**\n     * Returns name of file being audited.\n\
+    \     *\n     * @return the file name currently being audited or null if there\
+    \ is\n     *     no relation to a file.\n     */\n    public String getFileName()\
+    \ {\n        return fileName;\n    }\n\n    /**\n     * Return the line number\
+    \ on the source file where the event occurred.\n     * This may be 0 if there\
+    \ is no relation to a file content.\n     *\n     * @return an integer representing\
+    \ the line number in the file source code.\n     */\n    public int getLine()\
+    \ {\n        return violation.getLineNo();\n    }\n\n    /**\n     * Return the\
+    \ violation associated to the event.\n     *\n     * @return the event violation\n\
+    \     */\n    public String getMessage() {\n        return violation.getViolation();\n\
+    \    }\n\n    /**\n     * Gets the column associated with the violation.\n   \
+    \  *\n     * @return the column associated with the violation\n     */\n    public\
+    \ int getColumn() {\n        return violation.getColumnNo();\n    }\n\n    /**\n\
+    \     * Gets the audit event severity level.\n     *\n     * @return the audit\
+    \ event severity level\n     */\n    public SeverityLevel getSeverityLevel() {\n\
+    \        SeverityLevel severityLevel = SeverityLevel.INFO;\n        if (violation\
+    \ != null) {\n            severityLevel = violation.getSeverityLevel();\n    \
+    \    }\n        return severityLevel;\n    }\n\n    /**\n     * Returns id of\
+    \ module.\n     *\n     * @return the identifier of the module that generated\
+    \ the event. Can return\n     *         null.\n     */\n    public String getModuleId()\
+    \ {\n        return violation.getModuleId();\n    }\n\n    /**\n     * Gets the\
+    \ name of the source for the violation.\n     *\n     * @return the name of the\
+    \ source for the violation\n     */\n    public String getSourceName() {\n   \
+    \     return violation.getSourceName();\n    }\n\n    /**\n     * Gets the violation.\n\
+    \     *\n     * @return the violation\n     */\n    public Violation getViolation()\
+    \ {\n        return violation;\n    }\n\n}\n\n### Source File Dependency Files\
+    \ Content\n### Dependency File: empty.txt\n\nOutput the complete test file, code\
+    \ only, no explanations.\n### Time\nCurrent time: 2025-04-11 14:25:34\n"
+  role: user

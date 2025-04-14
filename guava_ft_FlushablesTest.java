@@ -15,94 +15,102 @@
 package com.google.common.io;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
+import com.google.common.testing.TestLogHandler;
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit test for {@link Flushables}.
- *
- * @author Michael Lancaster
- */
+/** Unit test for {@link Flushables}. */
 @RunWith(JUnit4.class)
+@AndroidIncompatible // Android's logging infrastructure ends up causing this test to fail.
 public class FlushablesTest {
+  private static final String LOG_MESSAGE = "IOException thrown while flushing Flushable.";
 
-  private static class TestFlushable implements Flushable {
-    private boolean throwException;
-    private boolean flushed;
-
-    @Override
-    public void flush() throws IOException {
-      if (throwException) {
-        throw new IOException("TestFlushable");
-      }
-      flushed = true;
-    }
-
-    public void setThrowException(boolean throwException) {
-      this.throwException = throwException;
-    }
-
-    public boolean wasFlushed() {
-      return flushed;
-    }
-  }
-
-  private TestFlushable flushable;
+  private final TestLogHandler logHandler = new TestLogHandler();
+  private final Logger logger = Logger.getLogger(Flushables.class.getName());
 
   @Before
   public void setUp() {
-    flushable = new TestFlushable();
+    logger.addHandler(logHandler);
   }
 
   @After
   public void tearDown() {
-    flushable = null;
+    logger.removeHandler(logHandler);
+  }
+
+  private static final class TestFlushable implements Flushable {
+    boolean flushed = false;
+    boolean throwIOException;
+    boolean throwRuntimeException;
+
+    @Override
+    public void flush() throws IOException {
+      if (throwIOException) {
+        throw new IOException();
+      }
+      if (throwRuntimeException) {
+        throw new RuntimeException();
+      }
+      flushed = true;
+    }
   }
 
   @Test
-  public void testFlush_noIOException() throws IOException {
-    Flushables.flush(flushable, false);
-    assertThat(flushable.wasFlushed()).isTrue();
-  }
-
-  @Test
-  public void testFlush_noIOExceptionSwallow() throws IOException {
+  public void testFlushWithoutIOException() throws IOException {
+    TestFlushable flushable = new TestFlushable();
     Flushables.flush(flushable, true);
-    assertThat(flushable.wasFlushed()).isTrue();
+    assertThat(flushable.flushed).isTrue();
+    assertThat(logHandler.getStoredLogRecords()).isEmpty();
   }
 
   @Test
-  public void testFlush_IOException() {
-    flushable.setThrowException(true);
+  public void testFlushWithIOException() throws IOException {
+    TestFlushable flushable = new TestFlushable();
+    flushable.throwIOException = true;
+    Flushables.flush(flushable, true);
+    assertThat(logHandler.getStoredLogRecords()).hasSize(1);
+    LogRecord logRecord = logHandler.getStoredLogRecords().get(0);
+    assertThat(logRecord.getLevel()).isEqualTo(Level.WARNING);
+    assertThat(logRecord.getMessage()).isEqualTo(LOG_MESSAGE);
+  }
+
+  @Test
+  public void testFlushWithIOException_throws() throws IOException {
+    TestFlushable flushable = new TestFlushable();
+    flushable.throwIOException = true;
     try {
       Flushables.flush(flushable, false);
-      fail("Expected IOException.");
+      fail();
     } catch (IOException expected) {
     }
   }
 
   @Test
-  public void testFlush_IOExceptionSwallow() throws IOException {
-    flushable.setThrowException(true);
-    Flushables.flush(flushable, true);
+  public void testFlushWithRuntimeException() throws IOException {
+    TestFlushable flushable = new TestFlushable();
+    flushable.throwRuntimeException = true;
+    assertThrows(RuntimeException.class, () -> Flushables.flush(flushable, true));
   }
 
   @Test
-  public void testFlushQuietly_noIOException() {
+  public void testFlushQuietly() {
+    TestFlushable flushable = new TestFlushable();
+    flushable.throwIOException = true;
     Flushables.flushQuietly(flushable);
-    assertThat(flushable.wasFlushed()).isTrue();
-  }
-
-  @Test
-  public void testFlushQuietly_IOException() {
-    flushable.setThrowException(true);
-    Flushables.flushQuietly(flushable);
+    assertThat(logHandler.getStoredLogRecords()).hasSize(1);
+    LogRecord logRecord = logHandler.getStoredLogRecords().get(0);
+    assertThat(logRecord.getLevel()).isEqualTo(Level.WARNING);
+    assertThat(logRecord.getMessage()).isEqualTo(LOG_MESSAGE);
   }
 }

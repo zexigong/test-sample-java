@@ -14,211 +14,131 @@
 
 package com.google.common.io;
 
-import static com.google.common.io.TestOption.CLOSE_THROWS;
-import static com.google.common.io.TestOption.OPEN_THROWS;
-import static com.google.common.io.TestOption.WRITE_THROWS;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.testing.NullPointerTester;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import com.google.common.annotations.GwtIncompatible;
+import com.google.common.annotations.J2ktIncompatible;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the default methods in {@link ByteSink}.
+ * A destination to which bytes can be written, such as a file. Unlike an {@link OutputStream}, a
+ * {@code ByteSink} is not an open, stateful stream that can be written to and closed. Instead, it
+ * is an immutable <i>supplier</i> of {@code OutputStream} instances.
  *
+ * <p>{@code ByteSink} provides two kinds of methods:
+ *
+ * <ul>
+ *   <li><b>Methods that return a stream:</b> These methods should return a <i>new</i>, independent
+ *       instance each time they are called. The caller is responsible for ensuring that the
+ *       returned stream is closed.
+ *   <li><b>Convenience methods:</b> These are implementations of common operations that are
+ *       typically implemented by opening a stream using one of the methods in the first category,
+ *       doing something and finally closing the stream or channel that was opened.
+ * </ul>
+ *
+ * @since 14.0
  * @author Colin Decker
  */
-public class ByteSinkTest extends IoTestCase {
+@J2ktIncompatible
+@GwtIncompatible
+public abstract class ByteSink {
 
-  private static final byte[] BYTES = newPreFilledByteArray(10000);
+  /** Constructor for use by subclasses. */
+  protected ByteSink() {}
 
-  private static TestByteSink sink() {
-    return new TestByteSink();
+  /**
+   * Returns a {@link CharSink} view of this {@code ByteSink} that writes characters to this sink as
+   * bytes encoded with the given {@link Charset charset}.
+   */
+  public CharSink asCharSink(Charset charset) {
+    return new AsCharSink(charset);
   }
 
-  private static TestByteSink sink(TestOption... options) {
-    return new TestByteSink(options);
+  /**
+   * Opens a new {@link OutputStream} for writing to this sink. This method returns a new,
+   * independent stream each time it is called.
+   *
+   * <p>The caller is responsible for ensuring that the returned stream is closed.
+   *
+   * @throws IOException if an I/O error occurs while opening the stream
+   */
+  public abstract OutputStream openStream() throws IOException;
+
+  /**
+   * Opens a new buffered {@link OutputStream} for writing to this sink. The returned stream is not
+   * required to be a {@link BufferedOutputStream} in order to allow implementations to simply
+   * delegate to {@link #openStream()} when the stream returned by that method does not benefit from
+   * additional buffering (for example, a {@code ByteArrayOutputStream}). This method returns a new,
+   * independent stream each time it is called.
+   *
+   * <p>The caller is responsible for ensuring that the returned stream is closed.
+   *
+   * @throws IOException if an I/O error occurs while opening the stream
+   * @since 15.0 (in 14.0 with return type {@link BufferedOutputStream})
+   */
+  public OutputStream openBufferedStream() throws IOException {
+    OutputStream out = openStream();
+    return (out instanceof BufferedOutputStream)
+        ? (BufferedOutputStream) out
+        : new BufferedOutputStream(out);
   }
 
-  public void testNulls() throws Exception {
-    NullPointerTester tester = new NullPointerTester();
-    tester.testAllPublicInstanceMethods(sink());
-  }
+  /**
+   * Writes all the given bytes to this sink.
+   *
+   * @throws IOException if an I/O occurs while writing to this sink
+   */
+  public void write(byte[] bytes) throws IOException {
+    checkNotNull(bytes);
 
-  public void testOpenBufferedStream() throws IOException {
-    TestByteSink sink = sink();
-    ByteStreams.exhaust(sink.openBufferedStream());
-    sink.assertOpenCalled();
-  }
-
-  public void testWrite() throws IOException {
-    TestByteSink sink = sink();
-    sink.write(BYTES);
-    sink.assertBytesWritten(BYTES);
-  }
-
-  public void testWrite_doesNotCloseIfWriterFails() throws IOException {
-    final IOException writeException = new IOException();
-    assertThrows(
-        IOException.class,
-        () ->
-            new TestByteSink(WRITE_THROWS) {
-              @Override
-              protected void beforeClose(OutputStream out) throws IOException {
-                throw writeException;
-              }
-            }.write(BYTES));
-  }
-
-  public void testWrite_fromInputStream() throws IOException {
-    TestByteSink sink = sink();
-    long count = sink.writeFrom(new ByteArrayInputStream(BYTES));
-    sink.assertBytesWritten(BYTES);
-    assertEquals(BYTES.length, count);
-  }
-
-  public void testWrite_fromInputStream_doesNotCloseIfWriterFails() throws IOException {
-    final IOException writeException = new IOException();
-    assertThrows(
-        IOException.class,
-        () ->
-            new TestByteSink(WRITE_THROWS) {
-              @Override
-              protected void beforeClose(OutputStream out) throws IOException {
-                throw writeException;
-              }
-            }.writeFrom(new ByteArrayInputStream(BYTES)));
-  }
-
-  public void testWrite_openThrows() {
-    assertThrows(IOException.class, () -> sink(OPEN_THROWS).write(BYTES));
-  }
-
-  public void testWriteFrom_openThrows() {
-    assertThrows(
-        IOException.class, () -> sink(OPEN_THROWS).writeFrom(new ByteArrayInputStream(BYTES)));
-  }
-
-  public void testWrite_writeThrows() {
-    assertThrows(IOException.class, () -> sink(WRITE_THROWS).write(BYTES));
-  }
-
-  public void testWriteFrom_writeThrows() {
-    assertThrows(
-        IOException.class, () -> sink(WRITE_THROWS).writeFrom(new ByteArrayInputStream(BYTES)));
-  }
-
-  public void testWrite_closeThrows() {
-    assertThrows(IOException.class, () -> sink(CLOSE_THROWS).write(BYTES));
-  }
-
-  public void testWriteFrom_closeThrows() {
-    assertThrows(
-        IOException.class, () -> sink(CLOSE_THROWS).writeFrom(new ByteArrayInputStream(BYTES)));
-  }
-
-  public void testAsCharSink() throws IOException {
-    Charset[] charsets = {StandardCharsets.UTF_8, StandardCharsets.US_ASCII};
-
-    for (Charset charset : charsets) {
-      TestByteSink sink = sink();
-      CharSink charSink = sink.asCharSink(charset);
-
-      String string = "éáűőúöüóí";
-      charSink.write(string);
-      assertEquals(string, new String(sink.getBytes(), charset));
-
-      charSink.write("");
-      assertEquals("", new String(sink.getBytes(), charset));
-
-      charSink.write("hello");
-      assertEquals("hello", new String(sink.getBytes(), charset));
-    }
-  }
-
-  private static final class TestByteSink extends ByteSink {
-
-    private final TestOption[] options;
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    private boolean openCalled;
-
-    TestByteSink(TestOption... options) {
-      this.options = options;
-    }
-
-    @Override
-    public OutputStream openStream() throws IOException {
-      openCalled = true;
-      if (OPEN_THROWS.isIn(options)) {
-        throw new IOException();
-      }
-      return new TestOutputStream(out, options) {
-        @Override
-        public void close() throws IOException {
-          beforeClose(out);
-          super.close();
-        }
-      };
-    }
-
-    protected void beforeClose(@SuppressWarnings("unused") OutputStream out) throws IOException {}
-
-    void assertOpenCalled() {
-      assertTrue(openCalled);
-    }
-
-    void assertBytesWritten(byte[] expected) {
-      assertEquals(expected.length, out.size());
-      assertEquals(0, TestUtils.difference(expected, out.toByteArray()));
-    }
-
-    byte[] getBytes() {
-      return out.toByteArray();
-    }
-  }
-
-  public static class TestOutputStream extends OutputStream {
-
-    private final OutputStream out;
-    private final Set<TestOption> options;
-    private boolean closed;
-
-    public TestOutputStream(OutputStream out, TestOption... options) {
-      this.out = out;
-      this.options = ImmutableSet.copyOf(options);
-    }
-
-    @Override
-    public void write(int b) throws IOException {
-      write(new byte[] {(byte) b});
-    }
-
-    @Override
-    public void write(@Nullable byte[] bytes) throws IOException {
-      if (closed) {
-        throw new IOException("Stream is closed.");
-      }
-      if (WRITE_THROWS.isIn(options)) {
-        throw new IOException();
-      }
+    try (OutputStream out = openStream()) {
       out.write(bytes);
     }
+  }
+
+  /**
+   * Writes all the bytes from the given {@code InputStream} to this sink. Does not close {@code
+   * input}.
+   *
+   * @return the number of bytes written
+   * @throws IOException if an I/O occurs while reading from {@code input} or writing to this sink
+   */
+  @CanIgnoreReturnValue
+  public long writeFrom(InputStream input) throws IOException {
+    checkNotNull(input);
+
+    try (OutputStream out = openStream()) {
+      return ByteStreams.copy(input, out);
+    }
+  }
+
+  /**
+   * A char sink that encodes written characters with a charset and writes resulting bytes to this
+   * byte sink.
+   */
+  private final class AsCharSink extends CharSink {
+
+    private final Charset charset;
+
+    private AsCharSink(Charset charset) {
+      this.charset = checkNotNull(charset);
+    }
 
     @Override
-    public void close() throws IOException {
-      if (CLOSE_THROWS.isIn(options)) {
-        throw new IOException();
-      }
-      closed = true;
-      out.close();
+    public Writer openStream() throws IOException {
+      return new OutputStreamWriter(ByteSink.this.openStream(), charset);
+    }
+
+    @Override
+    public String toString() {
+      return ByteSink.this.toString() + ".asCharSink(" + charset + ")";
     }
   }
 }

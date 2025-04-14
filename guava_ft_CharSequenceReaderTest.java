@@ -14,163 +14,99 @@
 
 package com.google.common.io;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.CharBuffer;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link CharSequenceReader}.
  *
  * @author Colin Decker
  */
+@RunWith(JUnit4.class)
 public class CharSequenceReaderTest {
 
-  private final Reader reader = new CharSequenceReader("abc");
+  private static final String STRING = "abcdef";
+  private static final CharSequence CHAR_SEQUENCE = new StringBuilder(STRING);
+
+  private CharSequenceReader in;
+
+  @Before
+  public void setUp() {
+    in = new CharSequenceReader(CHAR_SEQUENCE);
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    in.close();
+  }
 
   @Test
   public void read() throws IOException {
-    assertEquals('a', reader.read());
-    assertEquals('b', reader.read());
-    assertEquals('c', reader.read());
-    assertEquals(-1, reader.read());
+    assertThat((char) in.read()).isEqualTo('a');
+    assertThat((char) in.read()).isEqualTo('b');
+    assertThat((char) in.read()).isEqualTo('c');
+    assertThat((char) in.read()).isEqualTo('d');
+    assertThat((char) in.read()).isEqualTo('e');
+    assertThat((char) in.read()).isEqualTo('f');
+    assertThat(in.read()).isEqualTo(-1);
   }
 
   @Test
-  public void readToCharArray() throws IOException {
+  public void read_withCharArray() throws IOException {
     char[] buf = new char[4];
-    assertEquals(3, reader.read(buf));
-    assertEquals('a', buf[0]);
-    assertEquals('b', buf[1]);
-    assertEquals('c', buf[2]);
-    assertEquals(0, buf[3]);
-    assertEquals(-1, reader.read(buf));
-  }
+    assertThat(in.read(buf)).isEqualTo(4);
+    assertThat(buf).isEqualTo(new char[] {'a', 'b', 'c', 'd'});
 
-  @Test
-  public void readToCharArray_withOffsetAndLength() throws IOException {
-    char[] buf = new char[5];
-    assertEquals(3, reader.read(buf, 1, 3));
-    assertEquals(0, buf[0]);
-    assertEquals('a', buf[1]);
-    assertEquals('b', buf[2]);
-    assertEquals('c', buf[3]);
-    assertEquals(0, buf[4]);
-    assertEquals(-1, reader.read(buf, 1, 3));
-  }
+    assertThat(in.read(buf)).isEqualTo(2);
+    assertThat(buf).isEqualTo(new char[] {'e', 'f', 'c', 'd'});
 
-  @Test
-  public void readToCharBuffer() throws IOException {
-    CharBuffer buf = CharBuffer.allocate(5);
-    assertEquals(3, reader.read(buf));
-    buf.flip();
-    assertEquals('a', buf.get());
-    assertEquals('b', buf.get());
-    assertEquals('c', buf.get());
-    assertEquals(0, buf.get());
-    assertEquals(-1, reader.read(buf));
+    assertThat(in.read(buf)).isEqualTo(-1);
   }
 
   @Test
   public void skip() throws IOException {
-    assertEquals(2, reader.skip(2));
-    assertEquals('c', reader.read());
-    assertEquals(-1, reader.read());
-  }
-
-  @Test
-  public void skipPastEndOfString() throws IOException {
-    assertEquals(3, reader.skip(5));
-    assertEquals(-1, reader.read());
-  }
-
-  @Test
-  public void ready() throws IOException {
-    assertThat(reader.ready()).isTrue();
-    reader.skip(3);
-    assertThat(reader.ready()).isTrue();
+    assertThat(in.skip(3)).isEqualTo(3L);
+    assertThat((char) in.read()).isEqualTo('d');
+    in.skip(Long.MAX_VALUE);
+    assertThat(in.read()).isEqualTo(-1);
   }
 
   @Test
   public void markAndReset() throws IOException {
-    reader.skip(1);
-    reader.mark(3);
-    assertEquals('b', reader.read());
-    assertEquals('c', reader.read());
-    assertEquals(-1, reader.read());
+    assertThat((char) in.read()).isEqualTo('a');
+    in.mark(3);
+    assertThat((char) in.read()).isEqualTo('b');
+    assertThat((char) in.read()).isEqualTo('c');
+    in.reset();
+    assertThat((char) in.read()).isEqualTo('b');
+  }
 
-    reader.reset();
-    assertEquals('b', reader.read());
-    assertEquals('c', reader.read());
-    assertEquals(-1, reader.read());
+  @Test
+  public void markWithoutReadAheadLimit() throws IOException {
+    in.mark(0);
+    assertThat((char) in.read()).isEqualTo('a');
+    in.reset();
+    assertThat((char) in.read()).isEqualTo('a');
+  }
+
+  @Test
+  public void markAndReset_withoutRead() throws IOException {
+    in.mark(3);
+    in.reset();
+    assertThat((char) in.read()).isEqualTo('a');
   }
 
   @Test
   public void close() throws IOException {
-    reader.close();
-    try {
-      reader.read();
-      fail();
-    } catch (IOException expected) {
-    }
-  }
-
-  @Test
-  public void negativeSkip() throws IOException {
-    try {
-      reader.skip(-1);
-      fail();
-    } catch (IllegalArgumentException expected) {
-    }
-  }
-
-  @Test
-  public void negativeMark() throws IOException {
-    try {
-      reader.mark(-1);
-      fail();
-    } catch (IllegalArgumentException expected) {
-    }
-  }
-
-  @Test
-  public void negativeRead() throws IOException {
-    try {
-      reader.read(new char[1], 0, -1);
-      fail();
-    } catch (IllegalArgumentException expected) {
-    }
-  }
-
-  @Test
-  public void negativeOffsetRead() throws IOException {
-    try {
-      reader.read(new char[1], -1, 1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-    }
-  }
-
-  @Test
-  public void outOfBoundsRead() throws IOException {
-    try {
-      reader.read(new char[1], 0, 2);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-    }
-  }
-
-  @Test
-  public void negativeOffsetOutOfBoundsRead() throws IOException {
-    try {
-      reader.read(new char[1], -1, 2);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-    }
+    assertThat((char) in.read()).isEqualTo('a');
+    in.close();
+    assertThrows(IOException.class, () -> in.read());
   }
 }

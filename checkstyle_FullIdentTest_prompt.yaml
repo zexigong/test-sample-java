@@ -1,0 +1,116 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/FullIdent.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/FullIdentTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\nimport java.util.ArrayDeque;\n\
+    import java.util.ArrayList;\nimport java.util.Deque;\nimport java.util.List;\n\
+    \n/**\n * Represents a full identifier, including dots, with associated\n * position\
+    \ information.\n *\n * <p>\n * Identifiers such as {@code java.util.HashMap} are\
+    \ spread across\n * multiple AST nodes in the syntax tree (three IDENT nodes,\
+    \ two DOT nodes).\n * A FullIdent represents the whole String (excluding any intermediate\n\
+    \ * whitespace), which is often easier to work with in Checks.\n * </p>\n *\n\
+    \ * @see TokenTypes#DOT\n * @see TokenTypes#IDENT\n **/\npublic final class FullIdent\
+    \ {\n\n    /** The list holding subsequent elements of identifier. **/\n    private\
+    \ final List<String> elements = new ArrayList<>();\n    /** The topmost and leftmost\
+    \ AST of the full identifier. */\n    private DetailAST detailAst;\n\n    /**\
+    \ Hide default constructor. */\n    private FullIdent() {\n    }\n\n    /**\n\
+    \     * Creates a new FullIdent starting from the child of the specified node.\n\
+    \     *\n     * @param ast the parent node from where to start from\n     * @return\
+    \ a {@code FullIdent} value\n     */\n    public static FullIdent createFullIdentBelow(DetailAST\
+    \ ast) {\n        return createFullIdent(ast.getFirstChild());\n    }\n\n    /**\n\
+    \     * Creates a new FullIdent starting from the specified node.\n     *\n  \
+    \   * @param ast the node to start from\n     * @return a {@code FullIdent} value\n\
+    \     */\n    public static FullIdent createFullIdent(DetailAST ast) {\n     \
+    \   final FullIdent ident = new FullIdent();\n        extractFullIdent(ident,\
+    \ ast);\n        return ident;\n    }\n\n    /**\n     * Extracts a FullIdent.\n\
+    \     *\n     * @param full the FullIdent to add to\n     * @param ast the node\n\
+    \     */\n    private static void extractFullIdent(FullIdent full, DetailAST ast)\
+    \ {\n        final Deque<DetailAST> identStack = new ArrayDeque<>();\n       \
+    \ pushToIdentStack(identStack, ast);\n        boolean bracketsExist = false;\n\
+    \        int dotCounter = 0;\n        while (!identStack.isEmpty()) {\n      \
+    \      final DetailAST currentAst = identStack.pop();\n\n            final DetailAST\
+    \ nextSibling = currentAst.getNextSibling();\n\n            // Here we want type\
+    \ declaration, but not initialization\n            final boolean isArrayTypeDeclarationStart\
+    \ = nextSibling != null\n                    && (nextSibling.getType() == TokenTypes.ARRAY_DECLARATOR\n\
+    \                        || nextSibling.getType() == TokenTypes.ANNOTATIONS)\n\
+    \                    && isArrayTypeDeclaration(nextSibling);\n\n            final\
+    \ int typeOfAst = currentAst.getType();\n            bracketsExist = bracketsExist\
+    \ || isArrayTypeDeclarationStart;\n            final DetailAST firstChild = currentAst.getFirstChild();\n\
+    \n            if (typeOfAst == TokenTypes.LITERAL_NEW && currentAst.hasChildren())\
+    \ {\n                pushToIdentStack(identStack, firstChild);\n            }\n\
+    \            else if (typeOfAst == TokenTypes.DOT) {\n                pushToIdentStack(identStack,\
+    \ firstChild.getNextSibling());\n                pushToIdentStack(identStack,\
+    \ firstChild);\n                dotCounter++;\n            }\n            else\
+    \ {\n                dotCounter = appendToFull(full, currentAst, dotCounter,\n\
+    \                        bracketsExist, isArrayTypeDeclarationStart);\n      \
+    \      }\n        }\n    }\n\n    /**\n     * Populates the FullIdent node.\n\
+    \     *\n     * @param full the FullIdent to add to\n     * @param ast the node\n\
+    \     * @param dotCounter no of dots\n     * @param bracketsExist yes if true\n\
+    \     * @param isArrayTypeDeclarationStart true if array type declaration start\n\
+    \     * @return updated value of dotCounter\n     */\n    private static int appendToFull(FullIdent\
+    \ full, DetailAST ast,\n                int dotCounter, boolean bracketsExist,\
+    \ boolean isArrayTypeDeclarationStart) {\n        int result = dotCounter;\n \
+    \       if (isArrayTypeDeclarationStart) {\n            full.append(ast);\n  \
+    \          appendBrackets(full, ast);\n        }\n        else if (ast.getType()\
+    \ != TokenTypes.ANNOTATIONS) {\n            full.append(ast);\n            if\
+    \ (dotCounter > 0) {\n                full.append(\".\");\n                result--;\n\
+    \            }\n            if (bracketsExist) {\n                appendBrackets(full,\
+    \ ast.getParent());\n            }\n        }\n        return result;\n    }\n\
+    \n    /**\n     * Pushes to stack if ast is not null.\n     *\n     * @param stack\
+    \ stack to push into\n     * @param ast node to push into stack\n     */\n   \
+    \ private static void pushToIdentStack(Deque<DetailAST> stack, DetailAST ast)\
+    \ {\n        if (ast != null) {\n            stack.push(ast);\n        }\n   \
+    \ }\n\n    /**\n     * Checks an `ARRAY_DECLARATOR` ast to verify that it is not\
+    \ an\n     * array initialization, i.e. 'new int [2][2]'. We do this by\n    \
+    \ * making sure that no 'EXPR' token exists in this branch.\n     *\n     * @param\
+    \ arrayDeclarator the first ARRAY_DECLARATOR token in the ast\n     * @return\
+    \ true if ast is an array type declaration\n     */\n    private static boolean\
+    \ isArrayTypeDeclaration(DetailAST arrayDeclarator) {\n        DetailAST expression\
+    \ = arrayDeclarator;\n        while (expression != null) {\n            if (expression.getType()\
+    \ == TokenTypes.EXPR) {\n                break;\n            }\n            expression\
+    \ = expression.getFirstChild();\n        }\n        return expression == null;\n\
+    \    }\n\n    /**\n     * Appends the brackets of an array type to a {@code FullIdent}.\n\
+    \     *\n     * @param full the FullIdent to append brackets to\n     * @param\
+    \ ast the type ast we are building a {@code FullIdent} for\n     */\n    private\
+    \ static void appendBrackets(FullIdent full, DetailAST ast) {\n        final int\
+    \ bracketCount =\n                ast.getParent().getChildCount(TokenTypes.ARRAY_DECLARATOR);\n\
+    \        for (int i = 0; i < bracketCount; i++) {\n            full.append(\"\
+    []\");\n        }\n    }\n\n    /**\n     * Gets the text.\n     *\n     * @return\
+    \ the text\n     */\n    public String getText() {\n        return String.join(\"\
+    \", elements);\n    }\n\n    /**\n     * Gets the topmost leftmost DetailAST for\
+    \ this FullIdent.\n     *\n     * @return the topmost leftmost ast\n     */\n\
+    \    public DetailAST getDetailAst() {\n        return detailAst;\n    }\n\n \
+    \   /**\n     * Gets the line number.\n     *\n     * @return the line number\n\
+    \     */\n    public int getLineNo() {\n        return detailAst.getLineNo();\n\
+    \    }\n\n    /**\n     * Gets the column number.\n     *\n     * @return the\
+    \ column number\n     */\n    public int getColumnNo() {\n        return detailAst.getColumnNo();\n\
+    \    }\n\n    @Override\n    public String toString() {\n        return String.join(\"\
+    \", elements)\n            + \"[\" + detailAst.getLineNo() + \"x\" + detailAst.getColumnNo()\
+    \ + \"]\";\n    }\n\n    /**\n     * Append the specified text.\n     *\n    \
+    \ * @param text the text to append\n     */\n    private void append(String text)\
+    \ {\n        elements.add(text);\n    }\n\n    /**\n     * Append the specified\
+    \ token and also recalibrate the first line and\n     * column.\n     *\n    \
+    \ * @param ast the token to append\n     */\n    private void append(DetailAST\
+    \ ast) {\n        elements.add(ast.getText());\n        if (detailAst == null)\
+    \ {\n            detailAst = ast;\n        }\n    }\n\n}\n\n### Source File Dependency\
+    \ Files Content\n### Dependency File: empty.txt\n\nOutput the complete test file,\
+    \ code only, no explanations.\n### Time\nCurrent time: 2025-04-11 14:26:27\n"
+  role: user

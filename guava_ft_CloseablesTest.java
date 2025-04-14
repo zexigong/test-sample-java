@@ -15,179 +15,62 @@
 package com.google.common.io;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 
-import com.google.common.testing.TestLogHandler;
+import com.google.common.annotations.GwtIncompatible;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import junit.framework.TestCase;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.Test;
 
 /**
  * Unit test for {@link Closeables}.
  *
- * @author Ben Yu
+ * @author Michael Lancaster
  */
-public class CloseablesTest extends TestCase {
+@GwtIncompatible // java.io.Closeable
+public class CloseablesTest {
+  private static class TestCloseable implements Closeable {
+    boolean closed = false;
+    boolean throwExceptionOnClose = false;
 
-  private static final String MSG = "I am alive!";
-
-  private final TestLogHandler logHandler = new TestLogHandler();
-
-  @Override
-  protected void setUp() {
-    Closeables.logger.addHandler(logHandler);
+    @Override
+    public void close() throws IOException {
+      closed = true;
+      if (throwExceptionOnClose) {
+        throw new IOException();
+      }
+    }
   }
 
-  @Override
-  protected void tearDown() {
-    Closeables.logger.removeHandler(logHandler);
+  @Test
+  public void testClose() throws IOException {
+    TestCloseable closeable = new TestCloseable();
+    assertThat(closeable.closed).isFalse();
+
+    Closeables.close(closeable, false);
+    assertThat(closeable.closed).isTrue();
   }
 
-  public void testClose_IOException() {
-    final IOException e = new IOException();
-    Closeable closeable =
-        new Closeable() {
-          @Override
-          public void close() throws IOException {
-            throw e;
-          }
-        };
-    IOException thrown = assertThrows(IOException.class, () -> Closeables.close(closeable, false));
-    assertThat(thrown).isSameInstanceAs(e);
-  }
-
-  public void testClose_swallowsIOException() throws IOException {
-    Closeable closeable =
-        new Closeable() {
-          @Override
-          public void close() throws IOException {
-            throw new IOException(MSG);
-          }
-        };
-    Closeables.close(closeable, true);
-    assertThat(logHandler.getStoredLogRecords()).hasSize(1);
-    LogRecord logRecord = logHandler.getStoredLogRecords().get(0);
-    assertThat(logRecord.getLevel()).isEqualTo(Level.WARNING);
-    assertThat(logRecord.getThrown()).isInstanceOf(IOException.class);
-    assertThat(logRecord.getThrown()).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseQuietly_null() {
-    Closeables.closeQuietly((OutputStream) null);
-    // pass
-  }
-
-  public void testCloseQuietly_logsIOException() {
-    OutputStream stream =
-        new OutputStream() {
-          @Override
-          public void write(int b) {}
-
-          @Override
-          public void close() throws IOException {
-            throw new IOException(MSG);
-          }
-        };
-
-    Closeables.closeQuietly(stream);
-    assertThat(logHandler.getStoredLogRecords()).hasSize(1);
-    LogRecord logRecord = logHandler.getStoredLogRecords().get(0);
-    assertThat(logRecord.getLevel()).isEqualTo(Level.WARNING);
-    assertThat(logRecord.getThrown()).isInstanceOf(IOException.class);
-    assertThat(logRecord.getThrown()).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseQuietly_AssertionError() {
-    OutputStream stream =
-        new OutputStream() {
-          @Override
-          public void write(int b) {}
-
-          @Override
-          public void close() throws IOException {
-            throw new AssertionError(MSG);
-          }
-        };
-
-    // Log handler will get notified that an exception is thrown. It's a bit weird but it's fine.
-    AssertionError e = assertThrows(AssertionError.class, () -> Closeables.closeQuietly(stream));
-    assertThat(e).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseQuietly_RuntimeException() {
-    OutputStream stream =
-        new OutputStream() {
-          @Override
-          public void write(int b) {}
-
-          @Override
-          public void close() {
-            throw new RuntimeException(MSG);
-          }
-        };
-
-    // Log handler will get notified that an exception is thrown. It's a bit weird but it's fine.
-    RuntimeException e = assertThrows(RuntimeException.class, () -> Closeables.closeQuietly(stream));
-    assertThat(e).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseNull() throws IOException {
-    Closeables.close(null, true);
+  @Test
+  public void testNullCloseable() throws IOException {
     Closeables.close(null, false);
   }
 
-  public void testCloseQuietlyNull() {
-    Closeables.closeQuietly((Closeable) null);
-    Closeables.closeQuietly((OutputStream) null);
+  @Test
+  public void testIOExceptionThrown() {
+    TestCloseable closeable = new TestCloseable();
+    closeable.throwExceptionOnClose = true;
+    try {
+      Closeables.close(closeable, false);
+      fail("Expected IOException");
+    } catch (IOException expected) {
+    }
   }
 
-  public void testCloseQuietlyCloseable_logsIOException() {
-    Closeable stream =
-        new Closeable() {
-          @Override
-          public void close() throws IOException {
-            throw new IOException(MSG);
-          }
-        };
-
-    Closeables.closeQuietly(stream);
-    assertThat(logHandler.getStoredLogRecords()).hasSize(1);
-    LogRecord logRecord = logHandler.getStoredLogRecords().get(0);
-    assertThat(logRecord.getLevel()).isEqualTo(Level.WARNING);
-    assertThat(logRecord.getThrown()).isInstanceOf(IOException.class);
-    assertThat(logRecord.getThrown()).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseQuietlyCloseable_AssertionError() {
-    Closeable stream =
-        new Closeable() {
-          @Override
-          public void close() {
-            throw new AssertionError(MSG);
-          }
-        };
-
-    // Log handler will get notified that an exception is thrown. It's a bit weird but it's fine.
-    AssertionError e = assertThrows(AssertionError.class, () -> Closeables.closeQuietly(stream));
-    assertThat(e).hasMessageThat().isEqualTo(MSG);
-  }
-
-  public void testCloseQuietlyCloseable_RuntimeException() {
-    Closeable stream =
-        new Closeable() {
-          @Override
-          public void close() {
-            throw new RuntimeException(MSG);
-          }
-        };
-
-    // Log handler will get notified that an exception is thrown. It's a bit weird but it's fine.
-    RuntimeException e = assertThrows(RuntimeException.class, () -> Closeables.closeQuietly(stream));
-    assertThat(e).hasMessageThat().isEqualTo(MSG);
+  @Test
+  public void testSwallowIOException() throws IOException {
+    TestCloseable closeable = new TestCloseable();
+    closeable.throwExceptionOnClose = true;
+    Closeables.close(closeable, true);
   }
 }

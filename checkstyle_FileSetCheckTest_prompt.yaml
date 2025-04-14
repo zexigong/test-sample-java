@@ -1,0 +1,53 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/FileSetCheck.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/FileSetCheckTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\nimport java.io.File;\nimport\
+    \ java.util.SortedSet;\n\n/**\n * Interface for Checking a set of files for some\
+    \ criteria.\n *\n */\npublic interface FileSetCheck\n    extends Configurable,\
+    \ Contextualizable {\n\n    /**\n     * Sets the MessageDispatcher that is used\
+    \ to dispatch audit events\n     * to AuditListeners during processing.\n    \
+    \ *\n     * @param dispatcher the dispatcher\n     */\n    void setMessageDispatcher(MessageDispatcher\
+    \ dispatcher);\n\n    /**\n     * Initialise the instance. This is the time to\
+    \ verify that everything\n     * required to perform its job.\n     */\n    void\
+    \ init();\n\n    /** Cleans up the object. **/\n    void destroy();\n\n    /**\n\
+    \     * Called when about to be called to process a set of files.\n     *\n  \
+    \   * @param charset the character set used to read the files.\n     */\n    void\
+    \ beginProcessing(String charset);\n\n    /**\n     * Request to process a file.\
+    \ The implementation should use the supplied\n     * contents and not read the\
+    \ contents again. This reduces the amount of\n     * file I/O.\n     *\n     *\
+    \ <p>\n     * The file set to process might contain files that are not\n     *\
+    \ interesting to the FileSetCheck. Such files should be ignored,\n     * no audit\
+    \ event should be fired for them. For example a FileSetCheck\n     * that checks\
+    \ java files should ignore HTML or properties files.\n     * </p>\n     *\n  \
+    \   * <p>\n     * The method should return the set of violations to be logged.\n\
+    \     * </p>\n     *\n     * @param file the file to be processed\n     * @param\
+    \ fileText the contents of the file.\n     * @return the sorted set of violations\
+    \ to be logged.\n     * @throws CheckstyleException if error condition within\
+    \ Checkstyle occurs\n     */\n    SortedSet<Violation> process(File file, FileText\
+    \ fileText) throws CheckstyleException;\n\n    /**\n     * Called when all the\
+    \ files have been processed. This is the time to\n     * perform any checks that\
+    \ need to be done across a set of files. In this\n     * method, the implementation\
+    \ is responsible for the logging of violations.\n     */\n    void finishProcessing();\n\
+    \n}\n\n### Source File Dependency Files Content\n### Dependency File: empty.txt\n\
+    \nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 14:26:00\n"
+  role: user

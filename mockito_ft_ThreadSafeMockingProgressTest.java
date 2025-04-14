@@ -4,23 +4,45 @@
  */
 package org.mockito.internal.progress;
 
-import org.junit.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ThreadSafeMockingProgressTest {
+import org.junit.jupiter.api.Test;
+import org.mockito.exceptions.verification.junit.ArgumentsAreDifferent;
+import org.mockito.internal.verification.api.VerificationData;
+
+class ThreadSafeMockingProgressTest {
 
     @Test
-    public void shouldProvideMockingProgress() {
-        assertThat(ThreadSafeMockingProgress.mockingProgress()).isNotNull();
+    void threadSafeMockingProgress() throws Exception {
+        MockingProgress p1 = ThreadSafeMockingProgress.mockingProgress();
+        MockingProgress p2 = ThreadSafeMockingProgress.mockingProgress();
+        assertThat(p1).isSameAs(p2);
+
+        Thread t =
+                new Thread(
+                        () -> {
+                            MockingProgress p3 = ThreadSafeMockingProgress.mockingProgress();
+                            MockingProgress p4 = ThreadSafeMockingProgress.mockingProgress();
+                            assertThat(p3).isSameAs(p4);
+                            assertThat(p3).isNotSameAs(p1);
+                        });
+        t.start();
+        t.join();
     }
 
     @Test
-    public void shouldProvideThreadIndependentMockingProgress() throws InterruptedException {
-        MockingProgress[] result = new MockingProgress[1];
-        Thread t = new Thread(() -> result[0] = ThreadSafeMockingProgress.mockingProgress());
-        t.start();
-        t.join();
-        assertThat(ThreadSafeMockingProgress.mockingProgress()).isNotSameAs(result[0]);
+    void threadLocalIsResetWhenArgumentAreDifferentIsThrown() {
+        MockingProgress first = ThreadSafeMockingProgress.mockingProgress();
+        try {
+            throw new ArgumentsAreDifferent("testing the reset", new VerificationData() {
+                @Override
+                public Object getTarget() {
+                    return null;
+                }
+            });
+        } catch (ArgumentsAreDifferent ignored) {
+        }
+
+        assertThat(ThreadSafeMockingProgress.mockingProgress()).isNotSameAs(first);
     }
 }

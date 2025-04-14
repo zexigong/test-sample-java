@@ -15,98 +15,163 @@
 package com.google.common.io;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import junit.framework.TestCase;
+import java.io.InputStream;
+import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 /**
  * Unit test for {@link CountingInputStream}.
  *
  * @author Chris Nokleberg
  */
-public class CountingInputStreamTest extends TestCase {
+public class CountingInputStreamTest {
+
+  private static final byte[] DATA = newPreFilledByteArray(10000);
+
+  @Test
   public void testRead() throws IOException {
-    byte[] data = newPreFilledByteArray(10000);
-    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(data));
-    assertThat(in.getCount()).isEqualTo(0);
-    for (int i = 0; i < 500; i++) {
-      assertThat(in.read()).isEqualTo(i % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(500);
-    byte[] buffer = new byte[1000];
-    assertThat(in.read(buffer, 0, buffer.length)).isEqualTo(buffer.length);
-    assertThat(in.getCount()).isEqualTo(1500);
-    assertThat(in.skip(5)).isEqualTo(5);
-    assertThat(in.getCount()).isEqualTo(1505);
-    assertThat(in.skip(0)).isEqualTo(0);
-    assertThat(in.getCount()).isEqualTo(1505);
-    assertThat(in.skip(1)).isEqualTo(1);
-    assertThat(in.getCount()).isEqualTo(1506);
-    assertThat(in.skip(0)).isEqualTo(0);
-    assertThat(in.getCount()).isEqualTo(1506);
-    assertThat(in.skip(4994)).isEqualTo(4994);
-    assertThat(in.getCount()).isEqualTo(6500);
-    assertThat(in.skip(1)).isEqualTo(1);
-    assertThat(in.getCount()).isEqualTo(6501);
-    assertThat(in.skip(3499)).isEqualTo(3499);
-    assertThat(in.getCount()).isEqualTo(10000);
-    assertThat(in.read()).isEqualTo(-1);
-    assertThat(in.getCount()).isEqualTo(10000);
-    assertThat(in.skip(1)).isEqualTo(0);
-    assertThat(in.getCount()).isEqualTo(10000);
-    assertThat(in.read(buffer, 0, 1)).isEqualTo(-1);
-    assertThat(in.getCount()).isEqualTo(10000);
+    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(DATA));
+    assertEquals(0, in.getCount());
+    assertEquals(DATA[0], in.read());
+    assertEquals(1, in.getCount());
+    assertEquals(DATA[1], in.read());
+    assertEquals(2, in.getCount());
+    assertEquals(DATA[2], in.read());
+    assertEquals(3, in.getCount());
+
+    assertEquals(4, in.read(new byte[4]));
+    assertEquals(7, in.getCount());
+    assertEquals(4, in.read(new byte[1000]));
+    assertEquals(11, in.getCount());
+    assertEquals(1000, in.read(new byte[1000]));
+    assertEquals(1011, in.getCount());
+
+    assertEquals(0, in.read(new byte[0]));
+    assertEquals(1011, in.getCount());
+
+    assertEquals(8989, ByteStreams.exhaust(in));
+    assertEquals(10000, in.getCount());
+    assertEquals(-1, in.read());
+    assertEquals(10000, in.getCount());
   }
 
+  @Test
+  public void testSkip() throws IOException {
+    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(DATA));
+    assertEquals(0, in.getCount());
+    assertEquals(100, in.skip(100));
+    assertEquals(100, in.getCount());
+    assertEquals(DATA[100], in.read());
+    assertEquals(101, in.getCount());
+    assertEquals(9900, in.skip(10000));
+    assertEquals(10001, in.getCount());
+  }
+
+  @Test
   public void testMarkAndReset() throws IOException {
-    byte[] data = newPreFilledByteArray(1000);
-    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(data));
-    assertThat(in.getCount()).isEqualTo(0);
-    for (int i = 0; i < 100; i++) {
-      assertThat(in.read()).isEqualTo(i % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(100);
-    in.mark(1000);
-    assertThat(in.getCount()).isEqualTo(100);
-    for (int i = 100; i < 200; i++) {
-      assertThat(in.read()).isEqualTo(i % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(200);
+    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(DATA));
+    assertThat(in.markSupported()).isTrue();
+    assertEquals(DATA[0], in.read());
+    assertEquals(1, in.getCount());
+    in.mark(10);
+    assertEquals(DATA[1], in.read());
+    assertEquals(DATA[2], in.read());
+    assertEquals(3, in.getCount());
     in.reset();
-    assertThat(in.getCount()).isEqualTo(100);
-    for (int i = 100; i < 200; i++) {
-      assertThat(in.read()).isEqualTo(i % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(200);
-    in.mark(1000);
-    in.skip(100);
-    assertThat(in.getCount()).isEqualTo(300);
-    in.reset();
-    assertThat(in.getCount()).isEqualTo(200);
-    in.mark(1000);
-    assertThat(in.getCount()).isEqualTo(200);
-    for (int i = 0; i < 100; i++) {
-      assertThat(in.read()).isEqualTo((200 + i) % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(300);
-    in.reset();
-    assertThat(in.getCount()).isEqualTo(200);
-    in.mark(1000);
-    assertThat(in.getCount()).isEqualTo(200);
-    for (int i = 0; i < 300; i++) {
-      assertThat(in.read()).isEqualTo((200 + i) % 256);
-    }
-    assertThat(in.getCount()).isEqualTo(500);
-    in.reset();
-    assertThat(in.getCount()).isEqualTo(200);
+    assertEquals(1, in.getCount());
+    assertEquals(DATA[1], in.read());
+    assertEquals(DATA[2], in.read());
+    assertEquals(3, in.getCount());
   }
 
-  private byte[] newPreFilledByteArray(int size) {
+  @Test
+  public void testMarkAndReset_noMark() throws IOException {
+    CountingInputStream in = new CountingInputStream(new ByteArrayInputStream(DATA));
+    assertThat(in.markSupported()).isTrue();
+    assertEquals(DATA[0], in.read());
+    assertEquals(1, in.getCount());
+    in.reset();
+    assertEquals(1, in.getCount());
+    assertEquals(DATA[1], in.read());
+    assertEquals(2, in.getCount());
+  }
+
+  @Test
+  public void testMarkAndReset_markNotSupported() throws IOException {
+    CountingInputStream in =
+        new CountingInputStream(
+            new FilterInputStream(new ByteArrayInputStream(DATA)) {
+              @Override
+              public boolean markSupported() {
+                return false;
+              }
+            });
+    assertThat(in.markSupported()).isFalse();
+    assertEquals(DATA[0], in.read());
+    assertEquals(1, in.getCount());
+    in.mark(10);
+    assertEquals(DATA[1], in.read());
+    assertEquals(DATA[2], in.read());
+    assertEquals(3, in.getCount());
+    IOException resetNotSupported = assertThrows(IOException.class, new ThrowingRunnable() {
+      @Override
+      public void run() throws Throwable {
+        in.reset();
+      }
+    });
+    assertThat(resetNotSupported).hasMessageThat().isEqualTo("Mark not supported");
+  }
+
+  @Test
+  public void testMarkAndReset_resetWithoutMark() throws IOException {
+    CountingInputStream in =
+        new CountingInputStream(
+            new FilterInputStream(new ByteArrayInputStream(DATA)) {
+              @Override
+              public boolean markSupported() {
+                return true;
+              }
+            });
+    assertThat(in.markSupported()).isTrue();
+    assertEquals(DATA[0], in.read());
+    assertEquals(1, in.getCount());
+    IOException resetWithoutMark = assertThrows(IOException.class, new ThrowingRunnable() {
+      @Override
+      public void run() throws Throwable {
+        in.reset();
+      }
+    });
+    assertThat(resetWithoutMark).hasMessageThat().isEqualTo("Mark not set");
+  }
+
+  private static byte[] newPreFilledByteArray(int size) {
     byte[] data = new byte[size];
     for (int i = 0; i < size; i++) {
-      data[i] = (byte) (i % 256);
+      data[i] = (byte) i;
     }
     return data;
+  }
+
+  @Test
+  public void testSkipZero() throws IOException {
+    InputStream in = new InputStream() {
+      @Override
+      public int read() {
+        return 0;
+      }
+
+      @Override
+      public long skip(long n) {
+        return 0;
+      }
+    };
+    CountingInputStream countingIn = new CountingInputStream(in);
+    assertEquals(0, countingIn.skip(0));
+    assertEquals(0, countingIn.getCount());
   }
 }

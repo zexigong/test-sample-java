@@ -1,0 +1,58 @@
+messages:
+- content: You are an AI agent expert in writing unit tests. Your task is to write
+    unit tests for the given code files of the repository. Make sure the tests can
+    be executed without lint or compile errors.
+  role: system
+- content: "### Task Information\nBased on the source code, write/rewrite tests to\
+    \ cover the source code.\nRepository: checkstyle\nSource File Path: src/main/java/com/puppycrawl/tools/checkstyle/api/Comment.java\n\
+    Test File Path: src/test/java/com/puppycrawl/tools/checkstyle/api/CommentTest.java\n\
+    Project Programming Language: Java\nTesting Framework: JUnit\n### Source File\
+    \ Content\n### Source File Content:\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    // checkstyle: Checks Java source code and other text files for adherence to a\
+    \ set of rules.\n// Copyright (C) 2001-2025 the original author or authors.\n\
+    //\n// This library is free software; you can redistribute it and/or\n// modify\
+    \ it under the terms of the GNU Lesser General Public\n// License as published\
+    \ by the Free Software Foundation; either\n// version 2.1 of the License, or (at\
+    \ your option) any later version.\n//\n// This library is distributed in the hope\
+    \ that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied\
+    \ warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \ GNU\n// Lesser General Public License for more details.\n//\n// You should have\
+    \ received a copy of the GNU Lesser General Public\n// License along with this\
+    \ library; if not, write to the Free Software\n// Foundation, Inc., 59 Temple\
+    \ Place, Suite 330, Boston, MA  02111-1307  USA\n///////////////////////////////////////////////////////////////////////////////////////////////\n\
+    \npackage com.puppycrawl.tools.checkstyle.api;\n\nimport java.util.Arrays;\n\n\
+    /**\n * Representation of the comment block.\n *\n */\npublic class Comment implements\
+    \ TextBlock {\n\n    /** Text of the comment. */\n    private final String[] text;\n\
+    \n    /** Number of first line of the comment. */\n    private final int startLineNo;\n\
+    \n    /** Number of last line of the comment. */\n    private final int endLineNo;\n\
+    \n    /** Number of first column of the comment. */\n    private final int startColNo;\n\
+    \n    /** Number of last column of the comment. */\n    private final int endColNo;\n\
+    \n    /**\n     * Creates new instance.\n     *\n     * @param text the lines\
+    \ that make up the comment.\n     * @param firstCol number of the first column\
+    \ of the comment.\n     * @param lastLine number of the last line of the comment.\n\
+    \     * @param lastCol number of the last column of the comment.\n     */\n  \
+    \  public Comment(final String[] text, final int firstCol,\n            final\
+    \ int lastLine, final int lastCol) {\n        this.text = text.clone();\n    \
+    \    startLineNo = lastLine - text.length + 1;\n        endLineNo = lastLine;\n\
+    \        startColNo = firstCol;\n        endColNo = lastCol;\n    }\n\n    @Override\n\
+    \    public final String[] getText() {\n        return text.clone();\n    }\n\n\
+    \    @Override\n    public final int getStartLineNo() {\n        return startLineNo;\n\
+    \    }\n\n    @Override\n    public final int getEndLineNo() {\n        return\
+    \ endLineNo;\n    }\n\n    @Override\n    public int getStartColNo() {\n     \
+    \   return startColNo;\n    }\n\n    @Override\n    public int getEndColNo() {\n\
+    \        return endColNo;\n    }\n\n    @Override\n    public boolean intersects(int\
+    \ startLine, int startCol,\n                              int endLine, int endCol)\
+    \ {\n        // compute a single number for start and end\n        // to simplify\
+    \ conditional logic\n        final long multiplier = Integer.MAX_VALUE;\n    \
+    \    final long thisStart = startLineNo * multiplier + startColNo;\n        final\
+    \ long thisEnd = endLineNo * multiplier + endColNo;\n        final long inStart\
+    \ = startLine * multiplier + startCol;\n        final long inEnd = endLine * multiplier\
+    \ + endCol;\n\n        return thisEnd >= inStart && inEnd >= thisStart;\n    }\n\
+    \n    @Override\n    public String toString() {\n        return \"Comment[text=\"\
+    \ + Arrays.toString(text)\n                + \", startLineNo=\" + startLineNo\n\
+    \                + \", endLineNo=\" + endLineNo\n                + \", startColNo=\"\
+    \ + startColNo\n                + \", endColNo=\" + endColNo + ']';\n    }\n\n\
+    }\n\n### Source File Dependency Files Content\n### Dependency File: empty.txt\n\
+    \nOutput the complete test file, code only, no explanations.\n### Time\nCurrent\
+    \ time: 2025-04-11 14:25:55\n"
+  role: user

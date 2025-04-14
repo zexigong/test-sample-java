@@ -2,146 +2,54 @@
  * Copyright (c) 2007 Mockito contributors
  * This program is made available under the terms of the MIT License.
  */
+
 package org.mockito.internal.matchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.internal.exceptions.Reporter.noArgumentValueWasCaptured;
 
 import java.util.List;
-import java.util.concurrent.*;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CapturingMatcherTest {
 
-    private CapturingMatcher<Integer> matcher = new CapturingMatcher<>(Integer.class);
+    private final CapturingMatcher<String> m = new CapturingMatcher<>(String.class);
 
     @Test
-    void shouldCaptureArguments() {
-        // when
-        matcher.captureFrom(1);
-        matcher.captureFrom(200);
-
-        // then
-        List<Integer> values = matcher.getAllValues();
-        assertThat(values).containsExactly(1, 200);
+    void shouldCaptureNull() {
+        m.captureFrom(null);
+        assertThat(m.getLastValue()).isNull();
     }
 
     @Test
-    void shouldCaptureNullArguments() {
-        // when
-        matcher.captureFrom(null);
-
-        // then
-        List<Integer> values = matcher.getAllValues();
-        assertThat(values).containsExactly((Integer) null);
+    void shouldNotCaptureNullWhenNoArgumentValueWasCaptured() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> m.getLastValue(),
+                noArgumentValueWasCaptured().getMessage());
     }
 
     @Test
-    void shouldGetLastValue() {
-        // when
-        matcher.captureFrom(1);
-        matcher.captureFrom(200);
+    void shouldCaptureValues() {
+        m.captureFrom("foo");
+        m.captureFrom("bar");
+        m.captureFrom("baz");
 
-        // then
-        Integer lastValue = matcher.getLastValue();
-        assertThat(lastValue).isEqualTo(200);
+        assertThat(m.getLastValue()).isEqualTo("baz");
     }
 
     @Test
-    void shouldGetLastValueWhenNull() {
-        // when
-        matcher.captureFrom(null);
+    void shouldPullAllValues() {
+        m.captureFrom("foo");
+        m.captureFrom("bar");
+        m.captureFrom("baz");
 
-        // then
-        Integer lastValue = matcher.getLastValue();
-        assertThat(lastValue).isNull();
-    }
-
-    @Test
-    void shouldGetLastValueWhenOnlyNull() {
-        // when
-        matcher.captureFrom(1);
-        matcher.captureFrom(null);
-
-        // then
-        Integer lastValue = matcher.getLastValue();
-        assertThat(lastValue).isNull();
-    }
-
-    @Test
-    void shouldGetLastValueWhenEmpty() {
-        // then
-        Assertions.assertThatThrownBy(() -> matcher.getLastValue())
-                .isInstanceOf(noArgumentValueWasCaptured().getClass())
-                .hasMessageContaining(noArgumentValueWasCaptured().getMessage());
-    }
-
-    @Test
-    void shouldCaptureArgumentsInMultithreadedEnvironment() throws InterruptedException, ExecutionException {
-        // given
-        ExecutorService service = Executors.newFixedThreadPool(100);
-
-        // when
-        Future<Boolean>[] futures = new Future[1000];
-        for (int i = 0; i < futures.length; i++) {
-            futures[i] =
-                    service.submit(
-                            () -> {
-                                matcher.captureFrom(200);
-                                return true;
-                            });
-        }
-
-        for (Future<Boolean> future : futures) {
-            future.get();
-        }
-
-        // then
-        List<Integer> values = matcher.getAllValues();
-        assertThat(values).hasSize(1000);
-    }
-
-    @Test
-    void shouldGetLastValueInMultithreadedEnvironment() throws InterruptedException, ExecutionException {
-        // given
-        ExecutorService service = Executors.newFixedThreadPool(100);
-
-        // when
-        Future<Boolean>[] futures = new Future[1000];
-        for (int i = 0; i < futures.length; i++) {
-            futures[i] =
-                    service.submit(
-                            () -> {
-                                matcher.getLastValue();
-                                return true;
-                            });
-        }
-
-        for (Future<Boolean> future : futures) {
-            future.get();
-        }
-    }
-
-    @Test
-    void shouldGetAllValuesInMultithreadedEnvironment() throws InterruptedException, ExecutionException {
-        // given
-        ExecutorService service = Executors.newFixedThreadPool(100);
-
-        // when
-        Future<Boolean>[] futures = new Future[1000];
-        for (int i = 0; i < futures.length; i++) {
-            futures[i] =
-                    service.submit(
-                            () -> {
-                                matcher.getAllValues();
-                                return true;
-                            });
-        }
-
-        for (Future<Boolean> future : futures) {
-            future.get();
-        }
+        List<String> allValues = m.getAllValues();
+        assertThat(allValues).hasSize(3);
+        assertThat(allValues.get(0)).isEqualTo("foo");
+        assertThat(allValues.get(1)).isEqualTo("bar");
+        assertThat(allValues.get(2)).isEqualTo("baz");
     }
 }

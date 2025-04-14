@@ -4,95 +4,52 @@
  */
 package org.mockito.internal.matchers;
 
-import org.junit.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class EqualsTest {
 
     @Test
-    public void should_match_equal_objects() {
-        assertThat(new Equals("test")).accepts("test").rejects("not test");
+    public void shouldUseArgumentToStringIfPresent() {
+        assertEquals("\"Test\"",
+                new Equals("Test").toString());
     }
 
     @Test
-    public void should_match_null_values() {
-        assertThat(new Equals(null)).accepts((Object) null).rejects("not null");
+    public void shouldUseBracketsIfArgumentToStringIsAbsent() {
+        assertEquals("null", new Equals(null).toString());
     }
 
     @Test
-    public void should_print_as_string() {
-        assertThat(new Equals("test")).hasToString("\"test\"");
+    public void shouldMatchPrimitives() {
+        assertTrue(new Equals(10).matches(10));
+        assertFalse(new Equals(10).matches(20));
+        assertFalse(new Equals(10).matches(null));
+        assertFalse(new Equals(null).matches(10));
     }
 
     @Test
-    public void should_not_equal_object_of_different_class() {
-        assertThat(new Equals("test")).isNotEqualTo(new Object());
+    public void shouldMatchObjects() {
+        assertTrue(new Equals("Test").matches("Test"));
+        assertFalse(new Equals("Test").matches("Test 2"));
+        assertFalse(new Equals("Test").matches(null));
+        assertFalse(new Equals(null).matches("Test"));
     }
 
     @Test
-    public void should_equal_to_self() {
-        Equals equals = new Equals("test");
-        assertThat(equals).isEqualTo(equals);
+    public void shouldCompareToNull() {
+        assertThat(new Equals(null)).isEqualTo(new Equals(null));
+        assertThat(new Equals(null)).isNotEqualTo(new Equals("Test"));
+        assertThat(new Equals("Test")).isNotEqualTo(new Equals(null));
     }
 
     @Test
-    public void should_equal_to_equal_objects() {
-        assertThat(new Equals("test")).isEqualTo(new Equals("test"));
-    }
-
-    @Test
-    public void should_not_equal_to_different_objects() {
-        assertThat(new Equals("test")).isNotEqualTo(new Equals("different"));
-    }
-
-    @Test
-    public void should_not_equal_to_null() {
-        assertThat(new Equals("test")).isNotEqualTo(null);
-    }
-
-    @Test
-    public void should_have_1_as_hash_code() {
-        assertThat(new Equals("test").hashCode()).isEqualTo(1);
-    }
-
-    @Test
-    public void should_return_wanted() {
-        assertThat(new Equals("test").getWanted()).isEqualTo("test");
-    }
-
-    @Test
-    public void should_have_type_when_wanted_is_not_null() {
-        assertThat(new Equals("test").type()).isEqualTo(String.class);
-    }
-
-    @Test
-    public void should_not_have_type_when_wanted_is_null() {
-        assertThat(new Equals(null).type()).isNull();
-    }
-
-    @Test
-    public void should_return_type_matches_when_wanted_is_not_null_and_target_is_equal_to_wanted() {
-        assertThat(new Equals("test").typeMatches("another test")).isTrue();
-    }
-
-    @Test
-    public void should_return_type_not_matches_when_wanted_is_not_null_and_target_is_not_equal_to_wanted() {
-        assertThat(new Equals("test").typeMatches(1)).isFalse();
-    }
-
-    @Test
-    public void should_return_type_not_matches_when_wanted_is_null() {
-        assertThat(new Equals(null).typeMatches("test")).isFalse();
-    }
-
-    @Test
-    public void should_return_type_not_matches_when_target_is_null() {
-        assertThat(new Equals("test").typeMatches(null)).isFalse();
-    }
-
-    @Test
-    public void should_print_with_type() {
-        assertThat(new Equals("test").toStringWithType("classType")).isEqualTo("(classType) \"test\"");
+    public void shouldCompareToTheSameObject() {
+        assertThat(new Equals("Test")).isEqualTo(new Equals("Test"));
+        assertThat(new Equals("Test")).isNotEqualTo(new Equals("Test 2"));
     }
 }

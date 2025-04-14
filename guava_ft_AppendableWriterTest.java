@@ -14,116 +14,105 @@
 
 package com.google.common.io;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
-import com.google.common.annotations.GwtIncompatible;
-import com.google.common.annotations.J2ktIncompatible;
-import java.io.Closeable;
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.Writer;
-import org.jspecify.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * Writer that places all output on an {@link Appendable} target. If the target is {@link Flushable}
- * or {@link Closeable}, flush()es and close()s will also be delegated to the target.
+ * Unit test for {@link AppendableWriter}.
  *
  * @author Alan Green
- * @author Sebastian Kanthak
- * @since 1.0
  */
-@J2ktIncompatible
-@GwtIncompatible
-class AppendableWriter extends Writer {
-  private final Appendable target;
-  private boolean closed;
+@RunWith(JUnit4.class)
+public class AppendableWriterTest {
 
-  /**
-   * Creates a new writer that appends everything it writes to {@code target}.
-   *
-   * @param target target to which to append output
-   */
-  AppendableWriter(Appendable target) {
-    this.target = checkNotNull(target);
+  private final StringBuilder target = new StringBuilder();
+  private final Writer writer = new AppendableWriter(target);
+
+  @Test
+  public void testWriteChar() throws IOException {
+    writer.write('a');
+    assertThat(target.toString()).isEqualTo("a");
+    writer.write('b');
+    assertThat(target.toString()).isEqualTo("ab");
   }
 
-  /*
-   * Abstract methods from Writer
-   */
-
-  @Override
-  public void write(char[] cbuf, int off, int len) throws IOException {
-    checkNotClosed();
-    // It turns out that creating a new String is usually as fast, or faster
-    // than wrapping cbuf in a light-weight CharSequence.
-    target.append(new String(cbuf, off, len));
+  @Test
+  public void testWritePortionOfCharArray() throws IOException {
+    char[] chars = "abcd".toCharArray();
+    writer.write(chars, 1, 2);
+    assertThat(target.toString()).isEqualTo("bc");
   }
 
-  /*
-   * Override a few functions for performance reasons to avoid creating unnecessary strings.
-   */
-
-  @Override
-  public void write(int c) throws IOException {
-    checkNotClosed();
-    target.append((char) c);
+  @Test
+  public void testWritePortionOfString() throws IOException {
+    writer.write("abcd", 1, 2);
+    assertThat(target.toString()).isEqualTo("bc");
   }
 
-  @Override
-  public void write(String str) throws IOException {
-    checkNotNull(str);
-    checkNotClosed();
-    target.append(str);
+  @Test
+  public void testWriteString() throws IOException {
+    writer.write("abcd");
+    assertThat(target.toString()).isEqualTo("abcd");
   }
 
-  @Override
-  public void write(String str, int off, int len) throws IOException {
-    checkNotNull(str);
-    checkNotClosed();
-    // tricky: append takes start, end pair...
-    target.append(str, off, off + len);
+  @Test
+  public void testWriteNullString() throws IOException {
+    assertThrows(NullPointerException.class, () -> writer.write((String) null));
   }
 
-  @Override
-  public void flush() throws IOException {
-    checkNotClosed();
-    if (target instanceof Flushable) {
-      ((Flushable) target).flush();
+  @Test
+  public void testWriteNullStringWithIndexes() throws IOException {
+    assertThrows(NullPointerException.class, () -> writer.write(null, 0, 1));
+  }
+
+  @Test
+  public void testAppendChar() throws IOException {
+    writer.append('a');
+    assertThat(target.toString()).isEqualTo("a");
+    writer.append('b').append('c');
+    assertThat(target.toString()).isEqualTo("abc");
+  }
+
+  @Test
+  public void testAppendCharSequence() throws IOException {
+    writer.append("a");
+    assertThat(target.toString()).isEqualTo("a");
+    writer.append("bc").append("de");
+    assertThat(target.toString()).isEqualTo("abcde");
+  }
+
+  @Test
+  public void testAppendPortionOfCharSequence() throws IOException {
+    writer.append("abcd", 1, 3);
+    assertThat(target.toString()).isEqualTo("bc");
+  }
+
+  @Test
+  public void testAppendNullCharSequence() throws IOException {
+    writer.append((CharSequence) null);
+    assertThat(target.toString()).isEqualTo("null");
+  }
+
+  @Test
+  public void testAppendNullCharSequenceWithIndexes() throws IOException {
+    writer.append(null, 1, 2);
+    assertThat(target.toString()).isEqualTo("u");
+  }
+
+  @Test
+  public void testWriterClose() throws IOException {
+    List<String> data = new ArrayList<>();
+    try (Writer writer = new AppendableWriter(data)) {
+      writer.write("foo");
     }
-  }
-
-  @Override
-  public void close() throws IOException {
-    this.closed = true;
-    if (target instanceof Closeable) {
-      ((Closeable) target).close();
-    }
-  }
-
-  @Override
-  public Writer append(char c) throws IOException {
-    checkNotClosed();
-    target.append(c);
-    return this;
-  }
-
-  @Override
-  public Writer append(@Nullable CharSequence charSeq) throws IOException {
-    checkNotClosed();
-    target.append(charSeq);
-    return this;
-  }
-
-  @Override
-  public Writer append(@Nullable CharSequence charSeq, int start, int end) throws IOException {
-    checkNotClosed();
-    target.append(charSeq, start, end);
-    return this;
-  }
-
-  private void checkNotClosed() throws IOException {
-    if (closed) {
-      throw new IOException("Cannot write to a closed writer.");
-    }
+    assertThat(data).containsExactly("foo");
   }
 }
